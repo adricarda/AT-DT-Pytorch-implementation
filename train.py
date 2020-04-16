@@ -12,8 +12,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-import dataloader.dataloader as data_loader
-from dataloader.dataloader import get_predictions_plot
+import dataloader.dataloader_carla as data_loader, get_predictions_plot
 import utils
 from evaluate import evaluate
 from model.losses import get_loss_fn
@@ -21,7 +20,7 @@ from model.metrics import get_metrics
 from model.net import get_network
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data_dir', default='data',
+parser.add_argument('--data_dir', default='/content/drive/My Drive/atdt',
                     help="Directory containing the dataset")
 parser.add_argument('--model_dir', default='experiments/baseline',
                     help="Directory containing params.json")
@@ -30,6 +29,10 @@ parser.add_argument('--checkpoint_dir', default="experiments/baseline",
                     training")
 parser.add_argument('--tensorboard_dir', default="experiments/baseline/tensorboard",
                     help="Directory for Tensorboard data")
+parser.add_argument('--txt_train', default='/content/drive/My Drive/atdt/input_list_train_carla.txt',
+                    help="Txt file containing path to training images")
+parser.add_argument('--txt_val', default='/content/drive/My Drive/atdt/input_list_val_carla.txt',
+                    help="Txt file containing path to validation images")
 
 def get_lr(opt):
     for param_group in opt.param_groups:
@@ -39,8 +42,8 @@ def inference(model, batch):
     model.eval()
     with torch.no_grad():
         y_pred = model(batch.to(device))
-        y_pred = y_pred["out"].cpu()
-        y_pred = torch.argmax(y_pred,axis=1)
+        y_pred = y_pred["out"].detach().cpu().numpy()
+        # y_pred = torch.argmax(y_pred,axis=1)
     return y_pred
 
 def train_epoch(model,loss_fn,dataset_dl,opt=None, lr_scheduler=None, metrics=None, params=None):
@@ -96,10 +99,7 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
     if os.path.exists(ckpt_file_path):
         model, opt, lr_scheduler, start_epoch = utils.load_checkpoint(model, opt, lr_scheduler,
                                     start_epoch, False, checkpoint_dir, ckpt_filename) 
-        # checkpoint = torch.load(ckpt_file_path)
-        # start_epoch = checkpoint['epoch']
-        # model.load_state_dict(checkpoint['state_dict'])
-        # opt.load_state_dict(checkpoint['optim_dict'])
+
         print("=> loaded checkpoint form {} (epoch {})".format(ckpt_file_path, start_epoch))
     else:
         print("=> Initializing from scratch")
@@ -115,7 +115,6 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
 
         # Evaluate for one epoch on validation set
         val_loss, val_metrics = evaluate(model, loss_fn, val_dl, metrics=metrics, params=params)
-
         
         writer.add_scalars('Loss', {
                                     'Training': train_loss,
@@ -129,7 +128,7 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
                                     }, epoch)
             
         predictions = inference(model, batch_sample)
-        plot = get_predictions_plot(batch_sample, predictions, batch_gt)
+        plot = val_dl.dataset.get_predictions_plot(batch_sample, predictions, batch_gt)
         writer.add_image('Predictions', plot, epoch, dataformats='HWC')                          
         
         is_best = val_loss <= best_loss
@@ -150,11 +149,6 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
             best_json_path = os.path.join(checkpoint_dir, "metrics_val_best_weights.json")
             utils.save_dict_to_json(val_metrics, best_json_path)
 
-        # lr_scheduler.step(val_loss)
-        # if current_lr != get_lr(opt):
-        #     print("Loading best model weights!")
-        #     model.load_state_dict(best_model_wts) 
-            
         logging.info("\ntrain loss: %.3f, val loss: %.3f" %(train_loss, val_loss))
         for (train_metric_name, train_metric_results), (val_metric_name, val_metric_results) in zip(train_metrics.items(), val_metrics.items()): 
             logging.info("train %s: %.3f, val %s: %.3f" %(train_metric_name, train_metric_results[0], val_metric_name, val_metric_results[0]))
@@ -188,8 +182,8 @@ if __name__ == '__main__':
     logging.info("Loading the datasets...")
 
     # fetch dataloaders
-    train_dl = data_loader.fetch_dataloader(args.data_dir, 'train', params)
-    val_dl = data_loader.fetch_dataloader(args.data_dir, 'val', params)
+    train_dl = data_loader.fetch_dataloader(args.data_dir, args.txt_train, params)
+    val_dl = data_loader.fetch_dataloader(args.data_dir, args.txt_val, params)
 
     logging.info("- done.")
 

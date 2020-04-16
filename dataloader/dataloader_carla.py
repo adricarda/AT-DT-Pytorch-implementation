@@ -23,8 +23,15 @@ from albumentations import (
 from torch.utils.data import Dataset, DataLoader
 from collections import namedtuple
 
-mean = [0.286, 0.325, 0.283]
-std = [0.176, 0.180, 0.177]
+mean = [0.5, 0.5, 0.5]
+std = [0.5, 0.5, 0.5]
+
+def re_normalize (x, mean=mean, std=std):
+    x_r = x.clone()
+    for c, (mean_c, std_c) in enumerate(zip(mean, std)):
+        x_r[c] *= std_c
+        x_r[c] += mean_c
+    return x_r
 
 class CarlaDataset(Dataset):
     def __init__(self, root, txt_file, max_depth=1000, threshold=100, transform=None):
@@ -65,3 +72,56 @@ class CarlaDataset(Dataset):
         gt = torch.from_numpy(gt)
         
         return img, gt
+
+    def get_predictions_plot(batch_sample, predictions, batch_gt):
+
+        num_images = batch_sample.size()[0]
+        fig, m_axs = plt.subplots(3, num_images, figsize=(12, 10), squeeze=False)
+        plt.subplots_adjust(hspace = 0.1, wspace = 0.1)
+
+        for image, prediction, gt, (axis1, axis2, axis3) in zip(batch_sample, predictions, batch_gt, m_axs.T):
+            
+            image = re_normalize(image, mean, std)
+            image = to_pil_image(image)
+            axis1.imshow(image)
+            axis1.set_axis_off()
+
+            prediction = depth2color(prediction)
+            axis2.imshow(prediction)
+            axis2.set_axis_off()
+            
+            gt = depth2color(gt)
+            axis3.imshow(gt)
+            axis3.set_axis_off()
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', bbox_inches = 'tight', pad_inches = 0)
+        buf.seek(0)
+        im = Image.open(buf)
+        figure = np.array(im)
+        buf.close()
+        plt.close(fig)
+        return figure    
+
+def fetch_dataloader(root, txt_file, split, params, **kwargs):
+    h, w = params.crop_h, params.crop_w
+
+    if split == 'train':
+        transform_train = Compose([RandomCrop(h,w),
+                    HorizontalFlip(p=0.5), 
+                    Normalize(mean=mean,std=std)])
+
+        dataset=CarlaDataset(root, txt_file, **kwargs)
+        return DataLoader(dataset, batch_size=params.batch_size_train, shuffle=True, num_workers=params.num_workers, drop_last=True, pin_memory=True)
+
+    else:
+        transform_val = Compose( [Normalize(mean=mean,std=std)])
+        dataset=CarlaDataset(root, txt_file, **kwargs)
+        #reduce validation data to speed up training
+        if "split_validation" in params.dict:
+            ss = ShuffleSplit(n_splits=1, test_size=params.split_validation, random_state=42)
+            indexes=range(len(dataset))
+            split1, split2 = next(ss.split(indexes))
+            dataset=Subset(dataset, split2)        
+
+        return DataLoader(dataset, batch_size=params.batch_size_val, shuffle=False, num_workers=params.num_workers, drop_last=True, pin_memory=True)
