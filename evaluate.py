@@ -9,7 +9,7 @@ import torch
 import utils
 from model.net import get_network
 from tqdm import tqdm
-import dataloader.dataloader as data_loader
+import dataloader.dataloader_carla as data_loader
 from model.losses import get_loss_fn
 from model.metrics import get_metrics
 
@@ -42,9 +42,9 @@ def evaluate(model,loss_fn,dataset_dl,opt=None, metrics=None, params=None):
             loss_b = loss_fn(output, yb)
             running_loss.update(loss_b.item())
             if metrics is not None:            
-                output=torch.argmax(output.detach(), dim=1)
+                # output=torch.argmax(output.detach(), dim=1)
                 for metric_name, metric in metrics.items(): 
-                    metric.add(output, yb.detach())
+                    metric.add(output, yb)
 
     if metrics is not None:
         metrics_results = {}

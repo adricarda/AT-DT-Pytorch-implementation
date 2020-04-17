@@ -4,7 +4,7 @@ import argparse
 import os
 import utils
 import matplotlib.pyplot as plt
-import dataloader.dataloader as data_loader
+import dataloader.dataloader_carla as data_loader
 from model.net import get_network
 from model.losses import get_loss_fn
 import torch.optim as optim
@@ -19,6 +19,10 @@ parser.add_argument('--model_dir', default='experiments/baseline',
 parser.add_argument('--checkpoint_dir', default=None,
                     help="Directory containing weights to reload before \
                     training")
+parser.add_argument('--txt_train', default='/content/drive/My Drive/atdt/input_list_train_carla.txt',
+                    help="Txt file containing path to training images")
+parser.add_argument('--txt_val', default='/content/drive/My Drive/atdt/input_list_val_carla.txt',
+                    help="Txt file containing path to validation images")                    
 
 def find_lr(data_ld, opt, model, criterion, device, init_value = 1e-8, final_value=10., beta = 0.98):
     num = len(data_ld)-1
@@ -41,7 +45,7 @@ def find_lr(data_ld, opt, model, criterion, device, init_value = 1e-8, final_val
         avg_loss = beta * avg_loss + (1-beta) *loss.item()
         smoothed_loss = avg_loss / (1 - beta**batch_num)
         #Stop if the loss is exploding
-        if batch_num > 1 and smoothed_loss > 4 * best_loss:
+        if batch_num > 1 and smoothed_loss > 3 * best_loss:
             return log_lrs, losses
         #Record the best loss
         if smoothed_loss < best_loss or batch_num==1:
@@ -79,12 +83,12 @@ if __name__ == '__main__':
     if torch.cuda.is_available():
         torch.cuda.manual_seed(42)
 
-    train_dl = data_loader.fetch_dataloader(args.data_dir, 'train', params)
+    train_dl = data_loader.fetch_dataloader(args.data_dir, args.txt_train, 'train', params)
 
     # Define the model and optimizer
     model = get_network(params).to(device)
     opt = optim.AdamW(model.parameters(), lr=params.learning_rate)
-    loss_fn = get_loss_fn(loss_name=params.loss_fn , ignore_index=19)
+    loss_fn = get_loss_fn(loss_name=params.loss_fn)
 
     if args.checkpoint_dir:
         model, _, _, _ = utils.load_checkpoint(model, is_best=False, checkpoint_dir=args.checkpoint_dir) 

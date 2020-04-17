@@ -34,7 +34,7 @@ def re_normalize (x, mean=mean, std=std):
     return x_r
 
 class CarlaDataset(Dataset):
-    def __init__(self, root, txt_file, max_depth=1000, threshold=100, transform=None):
+    def __init__(self, root, txt_file, transforms=None, max_depth=1000, threshold=100):
         self.files_txt = txt_file
         self.images = []
         self.labels = []
@@ -45,7 +45,7 @@ class CarlaDataset(Dataset):
             self.labels.append(os.path.join(root, splits[3].strip()))
         self.max_depth = max_depth
         self.treshold = threshold
-        self.transform = transform
+        self.transforms = transforms
         self.cm = plt.cm.get_cmap('jet')
         self.colors = self.cm(np.arange(256))[:,:3]
 
@@ -66,15 +66,19 @@ class CarlaDataset(Dataset):
         img = Image.open(self.images[index])          
         gt = Image.open(self.labels[index])
         gt = self.png2depth(gt)
-        if self.transform is not None:
-            img = self.transform(img)
+        if self.transforms is not None:
+            transformed = self.transforms(image=np.array(img), mask=np.array(gt))
+            img = transformed['image']
+            gt = transformed['mask']
         img = to_tensor(img)            
         gt = torch.from_numpy(gt)
         
         return img, gt
 
-    def get_predictions_plot(batch_sample, predictions, batch_gt):
+    def __len__(self):
+        return len(self.images)
 
+    def get_predictions_plot(self, batch_sample, predictions, batch_gt):
         num_images = batch_sample.size()[0]
         fig, m_axs = plt.subplots(3, num_images, figsize=(12, 10), squeeze=False)
         plt.subplots_adjust(hspace = 0.1, wspace = 0.1)
@@ -86,11 +90,11 @@ class CarlaDataset(Dataset):
             axis1.imshow(image)
             axis1.set_axis_off()
 
-            prediction = depth2color(prediction)
+            prediction = self.depth2color(prediction.squeeze())
             axis2.imshow(prediction)
             axis2.set_axis_off()
             
-            gt = depth2color(gt)
+            gt = self.depth2color(gt)
             axis3.imshow(gt)
             axis3.set_axis_off()
 
@@ -111,12 +115,12 @@ def fetch_dataloader(root, txt_file, split, params, **kwargs):
                     HorizontalFlip(p=0.5), 
                     Normalize(mean=mean,std=std)])
 
-        dataset=CarlaDataset(root, txt_file, **kwargs)
+        dataset=CarlaDataset(root, txt_file, transforms=transform_train, **kwargs)
         return DataLoader(dataset, batch_size=params.batch_size_train, shuffle=True, num_workers=params.num_workers, drop_last=True, pin_memory=True)
 
     else:
         transform_val = Compose( [Normalize(mean=mean,std=std)])
-        dataset=CarlaDataset(root, txt_file, **kwargs)
+        dataset=CarlaDataset(root, txt_file, transforms=transform_val, **kwargs)
         #reduce validation data to speed up training
         if "split_validation" in params.dict:
             ss = ShuffleSplit(n_splits=1, test_size=params.split_validation, random_state=42)

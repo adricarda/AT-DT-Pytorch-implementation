@@ -8,11 +8,10 @@ import os
 import numpy as np
 import torch
 import torch.optim as optim
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-import dataloader.dataloader_carla as data_loader, get_predictions_plot
+import dataloader.dataloader_carla as data_loader
 import utils
 from evaluate import evaluate
 from model.losses import get_loss_fn
@@ -56,7 +55,8 @@ def train_epoch(model,loss_fn,dataset_dl,opt=None, lr_scheduler=None, metrics=No
     
     for (xb, yb) in tqdm(dataset_dl):
         xb=xb.to(params.device)
-        yb=yb.to(params.device)    
+        yb=yb.to(params.device)
+      
         output=model(xb)['out']
         loss_b = loss_fn(output, yb)
 
@@ -71,9 +71,9 @@ def train_epoch(model,loss_fn,dataset_dl,opt=None, lr_scheduler=None, metrics=No
         running_loss.update(loss_b.item())
 
         if metrics is not None:            
-            output=torch.argmax(output, dim=1)
+            # output=torch.argmax(output, dim=1)
             for metric_name, metric in metrics.items(): 
-                metric.add(output, yb)
+                metric.add(output.detach(), yb)
 
     if metrics is not None:
         metrics_results = {}
@@ -91,7 +91,7 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
     best_loss=float('inf')
     start_epoch=0
 
-    for xb, yb in val_dl:
+    for xb, yb in train_dl:
         batch_sample = xb
         batch_gt = yb
         break
@@ -109,7 +109,7 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
         current_lr=get_lr(opt)
         logging.info('Epoch {}/{}, current lr={}'.format(epoch, start_epoch+params.num_epochs-1, current_lr))
         writer.add_scalar('Learning_rate', current_lr, epoch)
-
+        
         model.train()
         train_loss, train_metrics = train_epoch(model, loss_fn, train_dl, opt, lr_scheduler, metrics, params)
 
@@ -128,7 +128,7 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
                                     }, epoch)
             
         predictions = inference(model, batch_sample)
-        plot = val_dl.dataset.get_predictions_plot(batch_sample, predictions, batch_gt)
+        plot = train_dl.dataset.get_predictions_plot(batch_sample, predictions, batch_gt)
         writer.add_image('Predictions', plot, epoch, dataformats='HWC')                          
         
         is_best = val_loss <= best_loss
@@ -182,8 +182,8 @@ if __name__ == '__main__':
     logging.info("Loading the datasets...")
 
     # fetch dataloaders
-    train_dl = data_loader.fetch_dataloader(args.data_dir, args.txt_train, params)
-    val_dl = data_loader.fetch_dataloader(args.data_dir, args.txt_val, params)
+    train_dl = data_loader.fetch_dataloader(args.data_dir, args.txt_train, 'train', params)
+    val_dl = data_loader.fetch_dataloader(args.data_dir, args.txt_val, 'val', params)
 
     logging.info("- done.")
 
@@ -193,12 +193,11 @@ if __name__ == '__main__':
     lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=params.learning_rate, steps_per_epoch=len(train_dl), epochs=params.num_epochs, div_factor=20)
 
     # fetch loss function and metrics
-    loss_fn = get_loss_fn(loss_name=params.loss_fn , ignore_index=19)
+    loss_fn = get_loss_fn(loss_name=params.loss_fn)
     #num_classes+1 for background.
     metrics = {}
     for metric in params.metrics:
-        metrics[metric]= get_metrics(metrics_name=metric,
-                num_classes=params.num_classes+1, ignore_index=params.ignore_index)
+        metrics[metric]= get_metrics(metrics_name=metric)
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))

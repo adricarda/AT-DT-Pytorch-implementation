@@ -1,5 +1,5 @@
 {
-    "num_classes": 19,
+    "num_classes": 1,
     "learning_rate": 1e-4,
     "batch_size_train": 4,
     "batch_size_val": 2,
@@ -8,9 +8,9 @@
     "num_epochs": 70,
     "num_workers": 8,
     "start_epoch": 0,
-    "loss_fn": "beruh",
-    "metrics": ["rmse", "log_rmse"],
+    "loss_fn": "l1",
+    "metrics": ["rmse"],
     "architecture": "deeplab_resnet101",
-    "ignore_index": 19,
-    "split_validation": 0.2
-}
+    "pretrained": true,
+    "activation": "sigmoid",
+    "split_validation": 0.2}
