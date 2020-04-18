@@ -99,7 +99,7 @@ def save_checkpoint(state, is_best, checkpoint_dir='./', filename='checkpoint.ta
 
 
 def load_checkpoint(model, optimizer=None, lr_scheduler=None, start_epoch=None,
-                    is_best=False, checkpoint_dir='./', filename='checkpoint.tar'):
+                    is_best=False, best_value=None, checkpoint_dir='./', filename='checkpoint.tar'):
     filepath = os.path.join(checkpoint_dir, filename)
     
     if not os.path.exists(checkpoint_dir):
@@ -117,4 +117,6 @@ def load_checkpoint(model, optimizer=None, lr_scheduler=None, start_epoch=None,
         lr_scheduler.load_state_dict(checkpoint['scheduler_dict'])
     if start_epoch is not None:
         start_epoch = checkpoint['epoch']
-    return model, optimizer, lr_scheduler, start_epoch
+    if best_value is not None:
+        best_value = checkpoint['best_value']
+    return model, optimizer, lr_scheduler, start_epoch, best_value

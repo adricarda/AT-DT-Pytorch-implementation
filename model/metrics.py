@@ -373,9 +373,7 @@ class Threshold():
 
         ratios = np.maximum((predicted/np.maximum(target, self.eps)), (target/np.maximum(predicted, self.eps)))
         ratios = np.where(mask, ratios, 0)
-
-        ratios_per_image = np.mean((ratios < self.threshold) & (ratios>=1), axis=(1,2))
-
+        ratios_per_image = np.sum((ratios < self.threshold) & (ratios>=1), axis=(1,2)) / np.count_nonzero(ratios, axis=(1,2))
         self.errors += np.sum(ratios_per_image)
         self._num_examples += predicted.shape[0]
 
@@ -401,8 +399,8 @@ def get_metrics(metrics_name="iou", **kwargs):
     if metrics_name=='sq_rel':
         return MSE(relative=True, **kwargs)
     if metrics_name=='delta1':
-        return MSE(threshold=1.25, **kwargs)
+        return Threshold(threshold=1.25, **kwargs)
     if metrics_name=='delta2':
-        return MSE(threshold=1.25**2, **kwargs)
+        return Threshold(threshold=1.25**2, **kwargs)
     if metrics_name=='delta1':
-        return MSE(threshold=1.25**3, **kwargs)                    
+        return Threshold(threshold=1.25**3, **kwargs)                    

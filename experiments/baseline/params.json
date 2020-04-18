@@ -9,7 +9,7 @@
     "num_workers": 8,
     "start_epoch": 0,
     "loss_fn": "l1",
-    "metrics": ["abs_rel", "sq_rel", "rmse", "rmse_log"],
+    "metrics": ["sq_rel", "rmse", "delta1"],
     "architecture": "deeplab_resnet101",
     "pretrained": true,
     "activation": "sigmoid",

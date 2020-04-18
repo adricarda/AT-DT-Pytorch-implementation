@@ -17,6 +17,7 @@ from evaluate import evaluate
 from model.losses import get_loss_fn
 from model.metrics import get_metrics
 from model.net import get_network
+from collections import OrderedDict
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', default='/content/drive/My Drive/atdt',
@@ -76,7 +77,7 @@ def train_epoch(model,loss_fn,dataset_dl,opt=None, lr_scheduler=None, metrics=No
                 metric.add(output.detach(), yb)
 
     if metrics is not None:
-        metrics_results = {}
+        metrics_results = OrderedDict({})
         for metric_name, metric in metrics.items(): 
             metrics_results[metric_name] = metric.value()             
         return running_loss(), metrics_results
@@ -88,17 +89,17 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
 
     ckpt_file_path = os.path.join(checkpoint_dir, ckpt_filename)
     best_model_wts = copy.deepcopy(model.state_dict())
-    best_loss=float('inf')
+    best_value=float('inf')
     start_epoch=0
 
-    for xb, yb in train_dl:
+    for xb, yb in val_dl:
         batch_sample = xb
         batch_gt = yb
         break
 
     if os.path.exists(ckpt_file_path):
-        model, opt, lr_scheduler, start_epoch = utils.load_checkpoint(model, opt, lr_scheduler,
-                                    start_epoch, False, checkpoint_dir, ckpt_filename) 
+        model, opt, lr_scheduler, start_epoch, best_value = utils.load_checkpoint(model, opt, lr_scheduler,
+                                    start_epoch, False, best_value, checkpoint_dir, ckpt_filename) 
 
         print("=> loaded checkpoint form {} (epoch {})".format(ckpt_file_path, start_epoch))
     else:
@@ -131,20 +132,21 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
         plot = train_dl.dataset.get_predictions_plot(batch_sample, predictions, batch_gt)
         writer.add_image('Predictions', plot, epoch, dataformats='HWC')                          
         
-        is_best = val_loss <= best_loss
+        is_best = val_metrics.values[0] <= best_value
 
         # Save weights
         utils.save_checkpoint({'epoch': epoch + 1,
                                'state_dict': model.state_dict(),
                                'optim_dict': opt.state_dict(),
-                               'scheduler_dict': lr_scheduler.state_dict()},
-                              is_best=is_best,
+                               'scheduler_dict': lr_scheduler.state_dict(),
+                               'best_value': best_value},
+                              is_best=is_best,                              
                               checkpoint_dir=checkpoint_dir)
 
         # If best_eval, best_save_path
         if is_best:
             logging.info("- Found new best accuracy")
-            best_loss = val_loss
+            best_value = val_loss
             # Save best val metrics in a json file in the model directory
             best_json_path = os.path.join(checkpoint_dir, "metrics_val_best_weights.json")
             utils.save_dict_to_json(val_metrics, best_json_path)
@@ -195,7 +197,7 @@ if __name__ == '__main__':
     # fetch loss function and metrics
     loss_fn = get_loss_fn(loss_name=params.loss_fn)
     #num_classes+1 for background.
-    metrics = {}
+    metrics = OrderedDict({})
     for metric in params.metrics:
         metrics[metric]= get_metrics(metrics_name=metric)
 

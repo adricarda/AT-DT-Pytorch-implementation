@@ -90,7 +90,7 @@ if __name__ == '__main__':
                 num_classes=params.num_classes+1, ignore_index=params.ignore_index)
 
     # Reload weights from the saved file
-    model, _, _, _ = utils.load_checkpoint(model, is_best=True, checkpoint_dir=args.checkpoint_dir)
+    model, _, _, _, _ = utils.load_checkpoint(model, is_best=True, checkpoint_dir=args.checkpoint_dir)
 
     # Evaluate
     eval_loss, test_metrics = evaluate(model, loss_fn, test_dl, metrics, params)

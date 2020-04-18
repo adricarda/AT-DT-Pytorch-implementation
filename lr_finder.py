@@ -91,7 +91,7 @@ if __name__ == '__main__':
     loss_fn = get_loss_fn(loss_name=params.loss_fn)
 
     if args.checkpoint_dir:
-        model, _, _, _ = utils.load_checkpoint(model, is_best=False, checkpoint_dir=args.checkpoint_dir) 
+        model, _, _, _, _ = utils.load_checkpoint(model, is_best=False, checkpoint_dir=args.checkpoint_dir) 
     
     log_lrs, losses = find_lr(train_dl, opt, model, loss_fn, device)
     plot_lr(log_lrs, losses)
