@@ -10,7 +10,7 @@ import torch
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-
+import random
 import dataloader.dataloader_carla as data_loader
 import utils
 from evaluate import evaluate
@@ -141,7 +141,7 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
             batch_sample, predictions, batch_gt)
         writer.add_image('Predictions', plot, epoch, dataformats='HWC')
 
-        is_best = val_metrics.values[0] <= best_value
+        is_best = val_metrics.values()[0] <= best_value
 
         # Save weights
         utils.save_checkpoint({'epoch': epoch + 1,
@@ -186,9 +186,13 @@ if __name__ == '__main__':
     params.device = device
 
     # Set the random seed for reproducible experiments
-    torch.manual_seed(42)
+    seed = 42
+    torch.manual_seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    np.random.seed(seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed(42)
+        torch.cuda.manual_seed(seed)
 
     # Set the logger
     utils.set_logger(os.path.join(args.model_dir, 'train.log'))

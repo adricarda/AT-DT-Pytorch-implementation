@@ -3,7 +3,7 @@
 import argparse
 import logging
 import os
-
+import random
 import numpy as np
 import torch
 import utils
@@ -70,13 +70,16 @@ if __name__ == '__main__':
     params.device = device
 
     # Set the random seed for reproducible experiments
-    torch.manual_seed(42)
+    seed = 42
+    torch.manual_seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    np.random.seed(seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed(42)
+        torch.cuda.manual_seed(seed)
 
     # fetch dataloaders
-    dataloaders = data_loader.fetch_dataloader(['test'], args.data_dir, params)
-    test_dl = dataloaders['test']
+    val_dl = data_loader.fetch_dataloader(args.data_dir, 'val', params)
 
     # Define the model
     model = get_network(params).to(params.device)
@@ -93,6 +96,6 @@ if __name__ == '__main__':
     model, _, _, _, _ = utils.load_checkpoint(model, is_best=True, checkpoint_dir=args.checkpoint_dir)
 
     # Evaluate
-    eval_loss, test_metrics = evaluate(model, loss_fn, test_dl, metrics, params)
+    eval_loss, test_metrics = evaluate(model, loss_fn, test_dl, metric=metrics, params=params)
     best_json_path = os.path.join(args.model_dir, "evaluation.json")
     utils.save_dict_to_json(test_metrics, best_json_path)      
