@@ -8,3 +8,7 @@ ngrok
 ngrok-stable-linux-amd64.zip
 template_ws.code-workspace
 __pycache__/
+experiments/baseline/checkpoint.tar
+experiments/baseline/metrics_val_best_weights.json
+experiments/baseline/model_best.tar
+depth.code-workspace

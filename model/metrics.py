@@ -4,6 +4,7 @@ import math
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class ConfusionMatrix():
     """Constructs a confusion matrix for a multi-class classification problems.
     Does not support multi-label, multi-class problems.
@@ -88,6 +89,7 @@ class ConfusionMatrix():
         else:
             return self.conf
 
+
 class IoU():
     """Computes the intersection over union (IoU) per class and corresponding
     mean (mIoU).
@@ -169,6 +171,7 @@ class IoU():
 
         return [np.nanmean(iou), iou.tolist()]
 
+
 class Accuracy():
 
     def __init__(self, num_classes, normalized=False, ignore_index=None):
@@ -215,156 +218,170 @@ class Accuracy():
 
         return [np.diag(conf_matrix).sum() / conf_matrix.sum()]
 
-# class MAE():
-#     """
-#     Calculates the mean absolute error.
-#     """
-#     def __init__(self):
-#         super().__init__()
-#         self._sum_of_absolute_errors = 0.0
-#         self._num_examples = 0
 
-#     def reset(self):
-#         self._sum_of_absolute_errors = 0.0
-#         self._num_examples = 0
+class MSE():
 
-#     def add(self, predicted, target):
-#                 # If target and/or predicted are tensors, convert them to numpy arrays
-#         if torch.is_tensor(predicted):
-#             predicted = predicted.cpu().numpy()
-#         if torch.is_tensor(target):
-#             target = target.cpu().numpy()
-        
-#         assert predicted.shape[0] == target.shape[0], \
-#             'number of targets and predicted outputs do not match'
-#         if np.ndim(target) != np.ndim(predicted):
-#             predicted = predicted.squeeze(axis=1)
-#             assert target.shape == predicted.shape, \
-#             'target and predicted shapes do not match'
-
-#         #rescale prediction from [0,1] to [0, max_depth] (labels are in [0, max_depth] too)
-#         predicted = predicted*self.max_depth
-#         predicted[predicted<self.min_depth] = self.min_depth
-#         predicted[predicted>self.max_depth] = self.max_depth
-#         mask = np.logical_and(target > self.min_depth, target < self.max_depth)
-
-#         absolute_errors = np.abs(predicted[mask] - target[mask])
-#         self._sum_of_absolute_errors += np.sum(absolute_errors).item()
-#         self._num_examples += target.shape[0]
-
-#     def value(self):
-#         if self._num_examples == 0:
-#             raise ZeroDivisionError('MeanAbsoluteError must have at least one example before it can be computed.')
-#         return [self._sum_of_absolute_errors / self._num_examples]
-
-# class MeanSquaredError():
-#     """
-#     Calculates the mean squared error.
-#     """
-#     def __init__(self, min_depth=0.001, max_depth=100):
-#         super().__init__()
-#         self._sum_of_absolute_errors = 0.0
-#         self._num_examples = 0
-#         self.min_depth = min_depth
-#         self.max_depth = max_depth
-
-#     def reset(self):
-#         self._sum_of_absolute_errors = 0.0
-#         self._num_examples = 0
-
-#     def add(self, predicted, target):
-#         if torch.is_tensor(predicted):
-#             predicted = predicted.cpu().numpy()
-#         if torch.is_tensor(target):
-#             target = target.cpu().numpy()
-
-#         assert predicted.shape[0] == target.shape[0], \
-#             'number of targets and predicted outputs do not match'
-#         if np.ndim(target) != np.ndim(predicted):
-#             predicted = predicted.squeeze(axis=1)
-#             assert target.shape == predicted.shape, \
-#             'target and predicted shapes do not match'
-
-#         #rescale prediction from [0,1] to [0, max_depth] (labels are in [0, max_depth] too)
-#         predicted = predicted*self.max_depth
-#         predicted[predicted<self.min_depth] = self.min_depth
-#         predicted[predicted>self.max_depth] = self.max_depth
-#         mask = np.logical_and(target > self.min_depth, target < self.max_depth)
-
-#         squared_errors = np.power(predicted[mask] - target[mask], 2)
-#         self._sum_of_squared_errors += np.sum(squared_errors).item()
-#         self._num_examples += target.shape[0]
-
-#     def value(self):
-#         if self._num_examples == 0:
-#             raise ZeroDivisionError('MeanSquaredError must have at least one example before it can be computed.')
-#         return [self._sum_of_squared_errors / self._num_examples]
-
-# class RootMeanSquaredError(MeanSquaredError):
-#     """
-#     Calculates the root mean squared error.
-#     """
-#     def value(self):
-#         mse = super(RootMeanSquaredError, self).value()
-#         return [math.sqrt(mse[0])]
-
-
-class RMSE(nn.Module):
-    def __init__(self):
-        super(RMSE, self).__init__()
+    def __init__(self, relative=False, max_depth=100, min_depth=0.001):
+        super(MSE, self).__init__()
         self.errors = 0
         self._num_examples = 0
-        self.max_depth = 100
-        self.min_depth = 0.001
+        self.max_depth = max_depth
+        self.min_depth = min_depth
+        self.relative = relative
+        self.eps = 1e-6
     
     def reset(self):
         self.errors = 0
         self._num_examples = 0        
     
     def add(self, predicted, target):
+        # If target and/or predicted are tensors, convert them to numpy arrays
+        if torch.is_tensor(predicted):
+            predicted = predicted.cpu().numpy()
+        if torch.is_tensor(target):
+            target = target.cpu().numpy()
 
-        predicted = predicted.squeeze(dim=1)
+        predicted = predicted.squeeze(axis=1)
         predicted = predicted*self.max_depth
         predicted[predicted<self.min_depth] = self.min_depth
         predicted[predicted>self.max_depth] = self.max_depth
         mask = (target > self.min_depth) & (target < self.max_depth)
-        predicted[~mask] = 0
-        target[~mask] = 0
 
-        norms = torch.sum(torch.abs(predicted - target)**2, dim=(1,2))/torch.sum(mask, dim=(1,2))
-        norms = torch.sqrt(norms)
-        self._num_examples += predicted.size()[0]
+        #set elements that we do not want to count to 1 so that error is 0
+        predicted[~mask] = 1
+        target[~mask] = 1
+
+        if self.relative:
+            norms = np.sum(((predicted - target)**2)/target, axis=(1,2))/np.maximum(np.sum(mask, axis=(1,2), dtype=np.float32), self.eps)
+        else:
+            norms = np.sum((predicted - target)**2, axis=(1,2))/np.maximum(np.sum(mask, axis=(1,2), dtype=np.float32), self.eps)
+        
+        self.errors += np.sum(norms)
+        self._num_examples += predicted.shape[0]
 
     def value(self):
       error = self.errors / self._num_examples
-      return [error.item()]
+      return [error]
 
-# class LogRootMeanSquaredError(RootMeanSquaredError):
-#     """
-#     Calculates the log root mean squared error.
-#     """
-#     def add(self, predicted, target):
-#         if torch.is_tensor(predicted):
-#             predicted = predicted.cpu().numpy()
-#         if torch.is_tensor(target):
-#             target = target.cpu().numpy()
 
-#         assert predicted.shape[0] == target.shape[0], \
-#             'number of targets and predicted outputs do not match'
-#         if np.ndim(target) != np.ndim(predicted):
-#             predicted = predicted.squeeze(axis=1)
-#             assert target.shape == predicted.shape, \
-#             'target and predicted shapes do not match'
+class MAE(MSE):
 
-#         #rescale prediction from [0,1] to [0, max_depth] (labels are in [0, max_depth] too)
-#         predicted = predicted*self.max_depth
-#         predicted[predicted<self.min_depth] = self.min_depth
-#         predicted[predicted>self.max_depth] = self.max_depth
-#         mask = np.logical_and(target > self.min_depth, target < self.max_depth)
-#         squared_errors = np.power(np.log(predicted[mask]) - np.log(target[mask]), 2)
-#         self._sum_of_squared_errors += np.sum(squared_errors).item()
-#         self._num_examples += target.shape[0]
+    def add(self, predicted, target):
+        # If target and/or predicted are tensors, convert them to numpy arrays
+        if torch.is_tensor(predicted):
+            predicted = predicted.cpu().numpy()
+        if torch.is_tensor(target):
+            target = target.cpu().numpy()
 
+        predicted = predicted.squeeze(axis=1)
+        predicted = predicted*self.max_depth
+        predicted[predicted<self.min_depth] = self.min_depth
+        predicted[predicted>self.max_depth] = self.max_depth
+        mask = (target > self.min_depth) & (target < self.max_depth)
+        #set elements that we do not want to count to 1 so that error is 0
+        predicted[~mask] = 1
+        target[~mask] = 1
+        if self.relative:
+            norms = np.sum(np.abs(predicted - target)/target, axis=(1,2))/np.maximum(np.sum(mask, axis=(1,2)), self.eps)
+        else:
+            norms = np.sum(np.abs(predicted - target), axis=(1,2))/np.maximum(np.sum(mask, axis=(1,2)), self.eps)
+        self.errors += np.sum(norms)
+        self._num_examples += predicted.shape[0]
+
+
+class RMSE(MSE):
+       
+    def add(self, predicted, target):
+        # If target and/or predicted are tensors, convert them to numpy arrays
+        if torch.is_tensor(predicted):
+            predicted = predicted.cpu().numpy()
+        if torch.is_tensor(target):
+            target = target.cpu().numpy()
+
+        predicted = predicted.squeeze(axis=1)
+        predicted = predicted*self.max_depth
+        predicted[predicted<self.min_depth] = self.min_depth
+        predicted[predicted>self.max_depth] = self.max_depth
+        mask = (target > self.min_depth) & (target < self.max_depth)
+
+        #set elements that we do not want to count to 0 so that error is 0
+        predicted[~mask] = 1
+        target[~mask] = 1
+
+        norms = np.sum((predicted - target)**2, axis=(1,2))/np.maximum(np.sum(mask, axis=(1,2)), self.eps)
+        norms = np.sqrt(norms)
+        self.errors += np.sum(norms)
+        self._num_examples += predicted.shape[0]
+
+    def value(self):
+      error = self.errors / self._num_examples
+      return [error]
+
+
+class RMSELog(MSE):
+
+    def add(self, predicted, target):
+        
+        # If target and/or predicted are tensors, convert them to numpy arrays
+        if torch.is_tensor(predicted):
+            predicted = predicted.cpu().numpy()
+        if torch.is_tensor(target):
+            target = target.cpu().numpy()
+        
+        predicted = predicted.squeeze(axis=1)
+        predicted = predicted*self.max_depth
+        predicted[predicted<self.min_depth] = self.min_depth
+        predicted[predicted>self.max_depth] = self.max_depth
+        mask = (target > self.min_depth) & (target < self.max_depth)
+
+        predicted[~mask] = 1
+        target[~mask] = 1
+
+        norms = np.sum((np.log(predicted) - np.log(target))**2, axis=(1,2))/np.maximum(np.sum(mask, axis=(1,2)), self.eps)
+        norms = np.sqrt(norms)
+        self.errors += np.sum(norms)
+        self._num_examples += predicted.shape[0]
+
+
+class Threshold():
+    def __init__(self, threshold=1.25, max_depth=100, min_depth=0.001):
+        super(Threshold, self).__init__()
+        self.errors = 0
+        self._num_examples = 0
+        self.max_depth = max_depth
+        self.min_depth = min_depth
+        self.threshold = threshold
+        self.eps = 1e-6
+    
+    def reset(self):
+        self.errors = 0
+        self._num_examples = 0        
+    
+    def add(self, predicted, target):
+        # If target and/or predicted are tensors, convert them to numpy arrays
+        if torch.is_tensor(predicted):
+            predicted = predicted.cpu().numpy()
+        if torch.is_tensor(target):
+            target = target.cpu().numpy()
+
+        predicted = predicted.squeeze(axis=1)
+        predicted = predicted*self.max_depth
+        predicted[predicted<self.min_depth] = self.min_depth
+        predicted[predicted>self.max_depth] = self.max_depth
+        
+        mask = (target > self.min_depth) & (target < self.max_depth)
+
+        ratios = np.maximum((predicted/np.maximum(target, self.eps)), (target/np.maximum(predicted, self.eps)))
+        ratios = np.where(mask, ratios, 0)
+
+        ratios_per_image = np.mean((ratios < self.threshold) & (ratios>=1), axis=(1,2))
+
+        self.errors += np.sum(ratios_per_image)
+        self._num_examples += predicted.shape[0]
+
+    def value(self):
+      error = self.errors / self._num_examples
+      return [error]
 
 def get_metrics(metrics_name="iou", **kwargs):
     if metrics_name=='iou':
@@ -372,8 +389,20 @@ def get_metrics(metrics_name="iou", **kwargs):
     if metrics_name=='accuracy':
         return Accuracy(**kwargs)
     if metrics_name=='mse':
-        return MeanSquaredError(**kwargs)        
+        return MSE(**kwargs)        
     if metrics_name=='rmse':
         return RMSE(**kwargs)
-    if metrics_name=='log_rmse':
-        return LogRootMeanSquaredError(**kwargs)
+    if metrics_name=='rmse_log':
+        return RMSELog(**kwargs)
+    if metrics_name=='mae':
+        return MAE(**kwargs)
+    if metrics_name=='abs_rel':
+        return MAE(relative=True, **kwargs)
+    if metrics_name=='sq_rel':
+        return MSE(relative=True, **kwargs)
+    if metrics_name=='delta1':
+        return MSE(threshold=1.25, **kwargs)
+    if metrics_name=='delta2':
+        return MSE(threshold=1.25**2, **kwargs)
+    if metrics_name=='delta1':
+        return MSE(threshold=1.25**3, **kwargs)                    
