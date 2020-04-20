@@ -141,7 +141,18 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
             batch_sample, predictions, batch_gt)
         writer.add_image('Predictions', plot, epoch, dataformats='HWC')
 
-        is_best = val_metrics.values()[0] <= best_value
+        #get value for first metric
+        current_value = list(val_metrics.values())[0][0]
+        is_best = current_value <= best_value
+
+        # If best_eval, best_save_path
+        if is_best:
+            logging.info("- Found new best accuracy")
+            best_value = current_value
+            # Save best val metrics in a json file in the model directory
+            best_json_path = os.path.join(
+                checkpoint_dir, "metrics_val_best_weights.json")
+            utils.save_dict_to_json(val_metrics, best_json_path)
 
         # Save weights
         utils.save_checkpoint({'epoch': epoch + 1,
@@ -151,15 +162,6 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
                                'best_value': best_value},
                               is_best=is_best,
                               checkpoint_dir=checkpoint_dir)
-
-        # If best_eval, best_save_path
-        if is_best:
-            logging.info("- Found new best accuracy")
-            best_value = val_loss
-            # Save best val metrics in a json file in the model directory
-            best_json_path = os.path.join(
-                checkpoint_dir, "metrics_val_best_weights.json")
-            utils.save_dict_to_json(val_metrics, best_json_path)
 
         logging.info("\ntrain loss: %.3f, val loss: %.3f" %
                      (train_loss, val_loss))

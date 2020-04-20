@@ -96,6 +96,8 @@ if __name__ == '__main__':
     model, _, _, _, _ = utils.load_checkpoint(model, is_best=True, checkpoint_dir=args.checkpoint_dir)
 
     # Evaluate
-    eval_loss, test_metrics = evaluate(model, loss_fn, test_dl, metric=metrics, params=params)
+    eval_loss, val_metrics = evaluate(model, loss_fn, val_dl, metric=metrics, params=params)
     best_json_path = os.path.join(args.model_dir, "evaluation.json")
-    utils.save_dict_to_json(test_metrics, best_json_path)      
+    for val_metric_name, val_metric_results in val_metrics.items(): 
+        logging.info("%s: %.3f" %(val_metric_name, val_metric_results))
+    utils.save_dict_to_json(val_metrics, best_json_path)      

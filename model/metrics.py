@@ -257,7 +257,10 @@ class MSE():
             norms = np.sum((predicted - target)**2, axis=(1,2))/np.maximum(np.sum(mask, axis=(1,2), dtype=np.float32), self.eps)
         
         self.errors += np.sum(norms)
-        self._num_examples += predicted.shape[0]
+        #take invalid targets. a target is invalid if all the elements of its mask all set to 0. 
+        num_invalids = np.sum(np.all(mask==0, axis=(1,2)))
+        #invalid mask should not be counted when computing mean
+        self._num_examples += predicted.shape[0]-num_invalids
 
     def value(self):
       error = self.errors / self._num_examples
@@ -286,8 +289,11 @@ class MAE(MSE):
         else:
             norms = np.sum(np.abs(predicted - target), axis=(1,2))/np.maximum(np.sum(mask, axis=(1,2)), self.eps)
         self.errors += np.sum(norms)
-        self._num_examples += predicted.shape[0]
 
+        #take invalid targets. a target is invalid if all the elements of its mask all set to 0. 
+        num_invalids = np.sum(np.all(mask==0, axis=(1,2)))
+        #invalid mask should not be counted when computing mean
+        self._num_examples += predicted.shape[0]-num_invalids
 
 class RMSE(MSE):
        
@@ -311,7 +317,11 @@ class RMSE(MSE):
         norms = np.sum((predicted - target)**2, axis=(1,2))/np.maximum(np.sum(mask, axis=(1,2)), self.eps)
         norms = np.sqrt(norms)
         self.errors += np.sum(norms)
-        self._num_examples += predicted.shape[0]
+
+        #take invalid targets. a target is invalid if all the elements of its mask all set to 0. 
+        num_invalids = np.sum(np.all(mask==0, axis=(1,2)))
+        #invalid mask should not be counted when computing mean
+        self._num_examples += predicted.shape[0]-num_invalids
 
     def value(self):
       error = self.errors / self._num_examples
@@ -332,15 +342,20 @@ class RMSELog(MSE):
         predicted = predicted*self.max_depth
         predicted[predicted<self.min_depth] = self.min_depth
         predicted[predicted>self.max_depth] = self.max_depth
+        #take valid values
         mask = (target > self.min_depth) & (target < self.max_depth)
-
+        #set invalid values to 1 (error in this case is 0)
         predicted[~mask] = 1
         target[~mask] = 1
 
         norms = np.sum((np.log(predicted) - np.log(target))**2, axis=(1,2))/np.maximum(np.sum(mask, axis=(1,2)), self.eps)
         norms = np.sqrt(norms)
         self.errors += np.sum(norms)
-        self._num_examples += predicted.shape[0]
+
+        #take invalid targets. a target is invalid if all the elements of its mask all set to 0. 
+        num_invalids = np.sum(np.all(mask==0, axis=(1,2)))
+        #invalid mask should not be counted when computing mean
+        self._num_examples += predicted.shape[0]-num_invalids
 
 
 class Threshold():
@@ -370,12 +385,21 @@ class Threshold():
         predicted[predicted>self.max_depth] = self.max_depth
         
         mask = (target > self.min_depth) & (target < self.max_depth)
-
         ratios = np.maximum((predicted/np.maximum(target, self.eps)), (target/np.maximum(predicted, self.eps)))
         ratios = np.where(mask, ratios, 0)
-        ratios_per_image = np.sum((ratios < self.threshold) & (ratios>=1), axis=(1,2)) / np.count_nonzero(ratios, axis=(1,2))
+        ratios_per_image = np.sum((ratios < self.threshold) & (ratios>=1), axis=(1,2)) / np.maximum(np.count_nonzero(ratios, axis=(1,2)), self.eps)
         self.errors += np.sum(ratios_per_image)
-        self._num_examples += predicted.shape[0]
+
+        #the maximum between a ratio and its iverse its always positive, hence if this is not the case the corresponding target is ivalid
+        self._num_examples += np.count_nonzero(ratios_per_image)
+        
+        # test = []
+        # for i in range(len(predicted)):
+        #     mask = (target[i] > self.min_depth) & (target[i] < self.max_depth)
+        #     ratio = np.maximum((predicted[i][mask]/target[i][mask]), (target[i][mask]/predicted[i][mask]))
+        #     test.append(np.mean(ratio<self.threshold))
+        # print(test, ratios_per_image)
+
 
     def value(self):
       error = self.errors / self._num_examples

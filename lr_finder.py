@@ -2,6 +2,7 @@ import torch
 import math
 import argparse
 import os
+import random
 import utils
 import matplotlib.pyplot as plt
 import dataloader.dataloader_carla as data_loader
@@ -79,9 +80,13 @@ if __name__ == '__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # Set the random seed for reproducible experiments
-    torch.manual_seed(42)
+    seed = 42
+    torch.manual_seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    np.random.seed(seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed(42)
+        torch.cuda.manual_seed(seed)
 
     train_dl = data_loader.fetch_dataloader(args.data_dir, args.txt_train, 'train', params)
 
