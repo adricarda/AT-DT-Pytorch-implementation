@@ -30,5 +30,7 @@ def get_network(params):
         net = deeplabv3_resnet50(pretrained=params.pretrained)
     if 'activation' in params.dict:
         net.classifier[-1] = nn.Sequential(nn.Conv2d(256, params.num_classes, 1, 1 ), activation_func(params.activation))
+    else:
+        net.classifier[-1] = nn.Conv2d(256, params.num_classes, 1, 1 )
     return net
     
