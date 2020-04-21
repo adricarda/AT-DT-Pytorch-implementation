@@ -11,7 +11,7 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import random
-import dataloader.dataloader_carla as data_loader
+import dataloader.dataloader_depth as dataloader_depth
 import utils
 from evaluate import evaluate
 from model.losses import get_loss_fn
@@ -203,9 +203,10 @@ if __name__ == '__main__':
     logging.info("Loading the datasets...")
 
     # fetch dataloaders
-    train_dl = data_loader.fetch_dataloader(
+    train_dl = dataloader_depth.fetch_dataloader(
         args.data_dir, args.txt_train, 'train', params)
-    val_dl = data_loader.fetch_dataloader(
+
+    val_dl = dataloader_depth.fetch_dataloader(
         args.data_dir, args.txt_val, 'val', params)
 
     logging.info("- done.")

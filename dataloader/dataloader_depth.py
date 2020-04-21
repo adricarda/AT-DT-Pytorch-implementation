@@ -5,9 +5,8 @@ import torch
 import numpy as np
 import torchvision.transforms as transforms
 from torchvision.transforms.functional import to_tensor, to_pil_image
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset, Dataset
 import matplotlib.pyplot as plt
-from torchvision.datasets import Cityscapes
 from sklearn.model_selection import ShuffleSplit
 from torch.utils.data import Subset
 
@@ -33,8 +32,9 @@ def re_normalize (x, mean=mean, std=std):
         x_r[c] += mean_c
     return x_r
 
-class CarlaDataset(Dataset):
+class DepthDataset(Dataset):
     def __init__(self, root, txt_file, transforms=None, max_depth=1000, threshold=100):
+        super(DepthDataset, self).__init__()
         self.files_txt = txt_file
         self.images = []
         self.labels = []
@@ -115,12 +115,14 @@ def fetch_dataloader(root, txt_file, split, params, **kwargs):
                     HorizontalFlip(p=0.5), 
                     Normalize(mean=mean,std=std)])
 
-        dataset=CarlaDataset(root, txt_file, transforms=transform_train, **kwargs)
+        dataset_carla = DepthDataset(root, txt_file, transforms=transform_train, **kwargs)
+        train_dl_cs = DepthDataset(root, '/content/drive/My Drive/atdt/input_list_train_cityscapes.txt', transforms=transform_train, **kwargs)
+        dataset = ConcatDataset((dataset_carla, train_dl_cs))
         return DataLoader(dataset, batch_size=params.batch_size_train, shuffle=True, num_workers=params.num_workers, drop_last=True, pin_memory=True)
 
     else:
         transform_val = Compose( [Normalize(mean=mean,std=std)])
-        dataset=CarlaDataset(root, txt_file, transforms=transform_val, **kwargs)
+        dataset=DepthDataset(root, txt_file, transforms=transform_val, **kwargs)
         #reduce validation data to speed up training
         if "split_validation" in params.dict:
             ss = ShuffleSplit(n_splits=1, test_size=params.split_validation, random_state=42)

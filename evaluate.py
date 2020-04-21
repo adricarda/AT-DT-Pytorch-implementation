@@ -9,7 +9,7 @@ import torch
 import utils
 from model.net import get_network
 from tqdm import tqdm
-import dataloader.dataloader_carla as data_loader
+import dataloader.dataloader_depth as dataloader_depth
 from model.losses import get_loss_fn
 from model.metrics import get_metrics
 
@@ -79,7 +79,7 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(seed)
 
     # fetch dataloaders
-    val_dl = data_loader.fetch_dataloader(args.data_dir, 'val', params)
+    val_dl = dataloader_depth.fetch_dataloader(args.data_dir, 'val', params)
 
     # Define the model
     model = get_network(params).to(params.device)
