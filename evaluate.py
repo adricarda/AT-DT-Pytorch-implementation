@@ -38,7 +38,7 @@ def evaluate(model,loss_fn,dataset_dl,opt=None, metrics=None, params=None):
             xb=xb.to(params.device)
             yb=yb.to(params.device)    
             output=model(xb)['out']
-            
+
             loss_b = loss_fn(output, yb)
             running_loss.update(loss_b.item())
             if metrics is not None:            

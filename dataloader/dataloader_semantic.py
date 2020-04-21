@@ -9,8 +9,6 @@ from torch.utils.data import DataLoader, Dataset
 import matplotlib.pyplot as plt
 from sklearn.model_selection import ShuffleSplit
 from torch.utils.data import Subset
-
-
 from PIL import Image
 from albumentations import (
     HorizontalFlip,
@@ -22,16 +20,13 @@ from albumentations import (
 from torch.utils.data import Dataset, DataLoader
 from collections import namedtuple
 
-mean = [0.286, 0.325, 0.283]
-std = [0.176, 0.180, 0.177]
-
 class SegmentationDataset(Dataset):
-    mean = [0.286, 0.325, 0.283]
-    std = [0.176, 0.180, 0.177]
+
     # Based on https://github.com/mcordts/cityscapesScripts
     CityscapesClass = namedtuple('CityscapesClass', ['name', 'id', 'train_id', 'category', 'category_id',
                                                     'has_instances', 'ignore_in_eval', 'color'])
-    classes = [
+  
+    cs = [
         CityscapesClass('unlabeled', 0, 19, 'void', 0, False, True, (0, 0, 0)),
         CityscapesClass('ego vehicle', 1, 19, 'void', 0, False, True, (0, 0, 0)),
         CityscapesClass('rectification border', 2, 19, 'void', 0, False, True, (0, 0, 0)),
@@ -102,7 +97,7 @@ class SegmentationDataset(Dataset):
         CityscapesClass('caravan',              29, 19, 'vehicle', 7, True, True, (0, 0, 90)),
         CityscapesClass('trailer',              30, 19, 'vehicle', 7, True, True, (0, 0, 110)),
         CityscapesClass('train',                31, 19, 'vehicle', 7, True, False, (0, 80, 100)),
-        CityscapesClass('motorcycle',           7,  17, 'vehicle', 7, True, False, (0, 0, 230)),
+        CityscapesClass('motorcycle',           32, 19, 'vehicle', 7, True, False, (0, 0, 230)),
         CityscapesClass('bicycle',              33, 19, 'vehicle', 7, True, False, (119, 11, 32)),
         CityscapesClass('license plate',        -1, 19, 'vehicle', 7, False, True, (0, 0, 142)),
     ]
@@ -130,12 +125,12 @@ class SegmentationDataset(Dataset):
             CityscapesClass(  'bicycle'              , 18 ,      255 , 'vehicle'         , 7       , True         , False        , (0, 0, 0) ),
     ]
 
-    def __init__(self, root, txt_file, transforms=None, ignore_label=19, encoding='carla'):
+    def __init__(self, root, txt_file, transforms=None, ignore_label=19, encoding='cs2carla', mean=[0.286, 0.325, 0.283], std=[0.176, 0.180, 0.177]):
     
-        super(CityScapesDataset, self).__init__()
-        if encoding=='carla':
-            self.encoding = self.classes
-        else:
+        super(SegmentationDataset, self).__init__()
+        if encoding == 'carla':
+            self.encoding = self.cs
+        elif encoding == 'cs2carla':
             self.encoding = self.cs2carla
 
         self.id_to_trainId = {cs_class.id: cs_class.train_id for cs_class in self.encoding}
@@ -144,21 +139,24 @@ class SegmentationDataset(Dataset):
         self.images = []
         self.labels = []
         self.root = root
+        self.transforms = transforms
+
         for line in open(self.files_txt, 'r').readlines():
             splits = line.split(';')
             self.images.append(os.path.join(root, splits[0].strip()))
             self.labels.append(os.path.join(root, splits[2].strip()))
 
-        labels = range(19)
-        for cs_class in self.classes:
-            if cs_class.train_id in labels:
-                R, G, B = cs_class.color
-                self.palette.extend((R, G, B))
+        self.colors = {cs_class.train_id: cs_class.color for cs_class in self.encoding}
+        for train_id, color in sorted(self.colors.items(), key=lambda item: item[0]):
+            R, G, B = color
+            self.palette.extend((R, G, B))
 
         zero_pad = 256 * 3 - len(self.palette)
         for i in range(zero_pad):
             self.palette.append(0)
 
+        self.mean = mean
+        self.std = std
 
     def __getitem__(self, index):
         img_path, mask_path = self.images[index], self.labels[index]
@@ -168,15 +166,18 @@ class SegmentationDataset(Dataset):
         mask_copy = mask.copy()
         for k, v in self.id_to_trainId.items():
             mask_copy[mask == k] = v
-        mask = Image.fromarray(mask_copy.astype(np.uint8))
+        # mask = Image.fromarray(mask_copy.astype(np.uint8))
 
         if self.transforms is not None:
-            transformed = self.transforms(image=np.array(img), mask=np.array(mask))
+            transformed = self.transforms(image=np.array(img), mask=mask_copy)
             img = transformed['image']
-            mask = transformed['mask']
-        img = to_tensor(img)            
-        mask = torch.from_numpy(np.array(mask)).type(torch.long)    
-        return img, mask
+            mask_copy = transformed['mask']
+        img = to_tensor(img)
+        mask_copy = torch.from_numpy(mask_copy).type(torch.long)    
+        return img, mask_copy
+
+    def __len__(self):
+        return len(self.images)
 
     def colorize_mask(self, mask):
         # mask: numpy array of the mask
@@ -198,6 +199,8 @@ class SegmentationDataset(Dataset):
         num_images = batch_sample.size()[0]
         fig, m_axs = plt.subplots(3, num_images, figsize=(12, 10), squeeze=False)
         plt.subplots_adjust(hspace = 0.1, wspace = 0.1)
+        if predictions.dim() == 4:
+            predictions = torch.argmax(predictions, dim=1)
 
         for image, prediction, gt, (axis1, axis2, axis3) in zip(batch_sample, predictions, batch_gt, m_axs.T):
             
@@ -224,25 +227,25 @@ class SegmentationDataset(Dataset):
         return figure    
 
 
-def fetch_dataloader(root, txt_file, split, params, **kwargs):
-    h, w = params.crop_h, params.crop_w
+# def fetch_dataloader(root, txt_file, split, params, **kwargs):
+#     h, w = params.crop_h, params.crop_w
 
-    if split == 'train':
-        transform_train = Compose([RandomCrop(h,w),
-                    HorizontalFlip(p=0.5), 
-                    Normalize(mean=mean,std=std)])
+#     if split == 'train':
+#         transform_train = Compose([RandomCrop(h,w),
+#                     HorizontalFlip(p=0.5), 
+#                     Normalize(mean=mean,std=std)])
 
-        dataset=SegmentationDataset(root, txt_file, transforms=transform_train, **kwargs)
-        return DataLoader(dataset, batch_size=params.batch_size_train, shuffle=True, num_workers=params.num_workers, drop_last=True, pin_memory=True)
+#         dataset=SegmentationDataset(root, txt_file, transforms=transform_train, **kwargs)
+#         return DataLoader(dataset, batch_size=params.batch_size_train, shuffle=True, num_workers=params.num_workers, drop_last=True, pin_memory=True)
 
-    else:
-        transform_val = Compose( [Normalize(mean=mean,std=std)])
-        dataset=SegmentationDataset(root, txt_file, transforms=transform_val, **kwargs)
-        #reduce validation data to speed up training
-        if "split_validation" in params.dict:
-            ss = ShuffleSplit(n_splits=1, test_size=params.split_validation, random_state=42)
-            indexes=range(len(dataset))
-            split1, split2 = next(ss.split(indexes))
-            dataset=Subset(dataset, split2)        
+#     else:
+#         transform_val = Compose( [Normalize(mean=mean,std=std)])
+#         dataset=SegmentationDataset(root, txt_file, transforms=transform_val, **kwargs)
+#         #reduce validation data to speed up training
+#         if "split_validation" in params.dict:
+#             ss = ShuffleSplit(n_splits=1, test_size=params.split_validation, random_state=42)
+#             indexes=range(len(dataset))
+#             split1, split2 = next(ss.split(indexes))
+#             dataset=Subset(dataset, split2)        
 
-        return DataLoader(dataset, batch_size=params.batch_size_val, shuffle=False, num_workers=params.num_workers, drop_last=True, pin_memory=True)
+#         return DataLoader(dataset, batch_size=params.batch_size_val, shuffle=False, num_workers=params.num_workers, drop_last=True, pin_memory=True)

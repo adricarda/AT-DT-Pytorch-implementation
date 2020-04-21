@@ -19,3 +19,5 @@ experiments/resnet50/checkpoint.tar
 experiments/resnet50/train.log
 set_git.sh
 .gitignore
+experiments/depth_resnet50/tensorboard/
+experiments/segmentation_resnet50/tensorboard/

@@ -105,7 +105,7 @@ class IoU():
     when computing the IoU. Can be an int, or any iterable of ints.
     """
 
-    def __init__(self, num_classes, normalized=False, ignore_index=None):
+    def __init__(self, num_classes, normalized=False, ignore_index=None, **kwargs):
         super().__init__()
         self.conf_metric = ConfusionMatrix(num_classes, normalized)
 
@@ -174,7 +174,7 @@ class IoU():
 
 class Accuracy():
 
-    def __init__(self, num_classes, normalized=False, ignore_index=None):
+    def __init__(self, num_classes, normalized=False, ignore_index=None, **kwargs):
         super().__init__()
         self.conf_metric = ConfusionMatrix(num_classes, normalized)
 
@@ -221,7 +221,7 @@ class Accuracy():
 
 class MSE():
 
-    def __init__(self, relative=False, max_depth=100, min_depth=0.001):
+    def __init__(self, relative=False, max_depth=100, min_depth=0.001, **kwargs):
         super(MSE, self).__init__()
         self.errors = 0
         self._num_examples = 0
@@ -234,7 +234,7 @@ class MSE():
         self.errors = 0
         self._num_examples = 0        
     
-    def add(self, predicted, target):
+    def add(self, predicted, target, **kwargs):
         # If target and/or predicted are tensors, convert them to numpy arrays
         if torch.is_tensor(predicted):
             predicted = predicted.cpu().numpy()
@@ -359,7 +359,7 @@ class RMSELog(MSE):
 
 
 class Threshold():
-    def __init__(self, threshold=1.25, max_depth=100, min_depth=0.001):
+    def __init__(self, threshold=1.25, max_depth=100, min_depth=0.001, **kwargs):
         super(Threshold, self).__init__()
         self.errors = 0
         self._num_examples = 0

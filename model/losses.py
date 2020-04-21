@@ -39,7 +39,7 @@ class Masked_L1_loss(nn.Module):
     def __init__(self, threshold=100, **kwargs):
         self.threshold = threshold
         self.e = 1e-10
-        super().__init__(**kwargs)
+        super().__init__()
         
     def forward(self, prediction, target):
         gt = target.clone()

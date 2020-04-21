@@ -11,7 +11,7 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import random
-import dataloader.dataloader_depth as dataloader_depth
+import dataloader.dataloader as dataloader
 import utils
 from evaluate import evaluate
 from model.losses import get_loss_fn
@@ -29,23 +29,20 @@ parser.add_argument('--checkpoint_dir', default="experiments/baseline",
                     training")
 parser.add_argument('--tensorboard_dir', default="experiments/baseline/tensorboard",
                     help="Directory for Tensorboard data")
-parser.add_argument('--txt_train', default='/content/drive/My Drive/atdt/input_list_train_carla.txt',
+parser.add_argument('--txt_train', default='/content/drive/My Drive/atdt/input_list_train_mixed_carla_cityscapes.txt',
                     help="Txt file containing path to training images")
 parser.add_argument('--txt_val', default='/content/drive/My Drive/atdt/input_list_val_carla.txt',
                     help="Txt file containing path to validation images")
-
 
 def get_lr(opt):
     for param_group in opt.param_groups:
         return param_group['lr']
 
-
 def inference(model, batch):
     model.eval()
     with torch.no_grad():
         y_pred = model(batch.to(device))
-        y_pred = y_pred["out"].detach().cpu().numpy()
-        # y_pred = torch.argmax(y_pred,axis=1)
+        y_pred = y_pred["out"]
     return y_pred
 
 
@@ -73,9 +70,8 @@ def train_epoch(model, loss_fn, dataset_dl, opt=None, lr_scheduler=None, metrics
             lr_scheduler.step()
 
         running_loss.update(loss_b.item())
-
+        
         if metrics is not None:
-            # output=torch.argmax(output, dim=1)
             for metric_name, metric in metrics.items():
                 metric.add(output.detach(), yb)
 
@@ -93,7 +89,7 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
 
     ckpt_file_path = os.path.join(checkpoint_dir, ckpt_filename)
     best_model_wts = copy.deepcopy(model.state_dict())
-    best_value = float('inf')
+    best_value = -float('inf')
     start_epoch = 0
 
     for xb, yb in val_dl:
@@ -138,12 +134,11 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
 
         predictions = inference(model, batch_sample)
         plot = train_dl.dataset.get_predictions_plot(
-            batch_sample, predictions, batch_gt)
+            batch_sample, predictions.cpu(), batch_gt)
         writer.add_image('Predictions', plot, epoch, dataformats='HWC')
 
-        #get value for first metric
         current_value = list(val_metrics.values())[0][0]
-        is_best = current_value <= best_value
+        is_best = current_value >= best_value
 
         # If best_eval, best_save_path
         if is_best:
@@ -203,10 +198,10 @@ if __name__ == '__main__':
     logging.info("Loading the datasets...")
 
     # fetch dataloaders
-    train_dl = dataloader_depth.fetch_dataloader(
+    train_dl = dataloader.fetch_dataloader(
         args.data_dir, args.txt_train, 'train', params)
 
-    val_dl = dataloader_depth.fetch_dataloader(
+    val_dl = dataloader.fetch_dataloader(
         args.data_dir, args.txt_val, 'val', params)
 
     logging.info("- done.")
@@ -218,11 +213,11 @@ if __name__ == '__main__':
         opt, max_lr=params.learning_rate, steps_per_epoch=len(train_dl), epochs=params.num_epochs, div_factor=20)
 
     # fetch loss function and metrics
-    loss_fn = get_loss_fn(loss_name=params.loss_fn)
+    loss_fn = get_loss_fn(loss_name=params.loss_fn, ignore_index=19)
     # num_classes+1 for background.
     metrics = OrderedDict({})
     for metric in params.metrics:
-        metrics[metric] = get_metrics(metrics_name=metric)
+        metrics[metric] = get_metrics(metrics_name=metric, num_classes=params.num_classes+1, ignore_index=params.ignore_index)
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
