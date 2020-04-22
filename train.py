@@ -106,11 +106,10 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
     else:
         print("=> Initializing from scratch")
 
-    for epoch in range(start_epoch, start_epoch + params.num_epochs-1):
+    for epoch in range(start_epoch, params.num_epochs-1):
         # Run one epoch
         current_lr = get_lr(opt)
-        logging.info('Epoch {}/{}, current lr={}'.format(epoch,
-                                                         start_epoch+params.num_epochs-1, current_lr))
+        logging.info('Epoch {}/{}, current lr={}'.format(epoch, params.num_epochs-1, current_lr))
         writer.add_scalar('Learning_rate', current_lr, epoch)
 
         model.train()

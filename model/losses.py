@@ -54,9 +54,11 @@ def get_loss_fn(loss_name='crossentropy', **kwargs):
 
     if loss_name=='crossentropy':
         return nn.CrossEntropyLoss(**kwargs)
-    if loss_name=='beruh':
-        return BerHu(**kwargs)
-    if loss_name=='l1':
-        return Masked_L1_loss(**kwargs)    
+    # elif loss_name=='beruh':
+    #     return BerHu(**kwargs)
+    elif loss_name=='l1':
+        return Masked_L1_loss(**kwargs)
+    elif loss_name=='l2':
+        return nn.MSELoss()         
     else:
         return nn.CrossEntropyLoss(**kwargs)

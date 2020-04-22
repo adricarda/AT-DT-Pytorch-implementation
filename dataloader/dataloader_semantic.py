@@ -97,41 +97,43 @@ class SegmentationDataset(Dataset):
         CityscapesClass('caravan',              29, 19, 'vehicle', 7, True, True, (0, 0, 90)),
         CityscapesClass('trailer',              30, 19, 'vehicle', 7, True, True, (0, 0, 110)),
         CityscapesClass('train',                31, 19, 'vehicle', 7, True, False, (0, 80, 100)),
-        CityscapesClass('motorcycle',           32, 19, 'vehicle', 7, True, False, (0, 0, 230)),
+        CityscapesClass('motorcycle',           32, 7, 'vehicle', 7, True, False, (0, 0, 230)),
         CityscapesClass('bicycle',              33, 19, 'vehicle', 7, True, False, (119, 11, 32)),
         CityscapesClass('license plate',        -1, 19, 'vehicle', 7, False, True, (0, 0, 142)),
     ]
 
     carla = [
-            #       name                     id    trainId   category            catId     hasInstances   ignoreInEval   color
-            CityscapesClass(  'road'                 ,  0 ,        0 , 'flat'            , 1       , False        , False        , (128, 64,128) ),
-            CityscapesClass(  'sidewalk'             ,  1 ,        1 , 'flat'            , 1       , False        , False        , (244, 35,232) ),
-            CityscapesClass(  'building'             ,  2 ,        9 , 'construction'    , 2       , False        , False        , ( 70, 70, 70) ),
-            CityscapesClass(  'wall'                 ,  3 ,        2 , 'construction'    , 2       , False        , False        , (102,102,156) ),
-            CityscapesClass(  'fence'                ,  4 ,        3 , 'construction'    , 2       , False        , False        , (190,153,153) ),
-            CityscapesClass(  'pole'                 ,  5 ,        5 , 'object'          , 3       , False        , False        , (153,153,153) ),
-            CityscapesClass(  'traffic light'        ,  6 ,        8 , 'object'          , 3       , False        , False        , (250,170, 30) ),
-            CityscapesClass(  'traffic sign'         ,  7 ,        8 , 'object'          , 3       , False        , False        , (220,220,  0) ),
-            CityscapesClass(  'vegetation'           ,  8 ,        6 , 'nature'          , 4       , False        , False        , (107,142, 35) ),
-            CityscapesClass(  'terrain'              ,  9 ,      255 , 'nature'          , 4       , False        , False        , (0,0,0) ),
-            CityscapesClass(  'sky'                  , 10 ,       10 , 'sky'             , 5       , False        , False        , ( 70,130,180) ),
-            CityscapesClass(  'person'               , 11 ,        4 , 'human'           , 6       , True         , False        , (220, 20, 60) ),
-            CityscapesClass(  'rider'                , 12 ,      255 , 'human'           , 6       , True         , False        , (0,  0,  0) ),
-            CityscapesClass(  'car'                  , 13 ,        7 , 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
-            CityscapesClass(  'truck'                , 14 ,      255 , 'vehicle'         , 7       , True         , False        , (  0,  0, 0) ),
-            CityscapesClass(  'bus'                  , 15 ,      255 , 'vehicle'         , 7       , True         , False        , (  0, 0,0) ),
-            CityscapesClass(  'train'                , 16 ,      255 , 'vehicle'         , 7       , True         , False        , (  0, 0,0) ),
-            CityscapesClass(  'motorcycle'           , 17 ,        7 , 'vehicle'         , 7       , True         , False        , (  0,  0,230) ),
-            CityscapesClass(  'bicycle'              , 18 ,      255 , 'vehicle'         , 7       , True         , False        , (0, 0, 0) ),
+            #       name                                id    trainId   category            catId     hasInstances   ignoreInEval   color
+        CityscapesClass(  'road'                 ,    0,       0, 'flat'            , 1       , False        , False        , (128, 64,128) ),
+        CityscapesClass(  'sidewalk'             ,    1,       1, 'flat'            , 1       , False        , False        , (244, 35,232) ),
+        CityscapesClass(  'building'             ,    9,       9, 'construction'    , 2       , False        , False        , ( 70, 70, 70) ),
+        CityscapesClass(  'wall'                 ,    2,       2, 'construction'    , 2       , False        , False        , (102,102,156) ),
+        CityscapesClass(  'fence'                ,    3,       3, 'construction'    , 2       , False        , False        , (190,153,153) ),
+        CityscapesClass(  'pole'                 ,    5,       5, 'object'          , 3       , False        , False        , (153,153,153) ),
+        CityscapesClass(  'traffic light'        ,    8,       8, 'object'          , 3       , False        , False        , (250,170, 30) ),
+        CityscapesClass(  'traffic sign'         ,    8,       8, 'object'          , 3       , False        , False        , (220,220,  0) ),
+        CityscapesClass(  'vegetation'           ,    6,       6, 'nature'          , 4       , False        , False        , (107,142, 35) ),
+        CityscapesClass(  'terrain'              ,  255,      11, 'nature'          , 4       , False        , False        , (0,0,0) ),
+        CityscapesClass(  'sky'                  ,   10,      10, 'sky'             , 5       , False        , False        , ( 70,130,180) ),
+        CityscapesClass(  'person'               ,    4,       4, 'human'           , 6       , True         , False        , (220, 20, 60) ),
+        CityscapesClass(  'rider'                ,  255,      11, 'human'           , 6       , True         , False        , (0,  0,  0) ),
+        CityscapesClass(  'car'                  ,    7,       7, 'vehicle'         , 7       , True         , False        , (  0,  0,142) ),
+        CityscapesClass(  'truck'                ,  255,      11, 'vehicle'         , 7       , True         , False        , (  0,  0, 0) ),
+        CityscapesClass(  'bus'                  ,  255,      11, 'vehicle'         , 7       , True         , False        , (  0, 0,0) ),
+        CityscapesClass(  'train'                ,  255,      11, 'vehicle'         , 7       , True         , False        , (  0, 0,0) ),
+        CityscapesClass(  'motorcycle'           ,    7,       7, 'vehicle'         , 7       , True         , False        , (  0, 0, 230) ),
+        CityscapesClass(  'bicycle'              ,  255,      11, 'vehicle'         , 7       , True         , False        , (0, 0, 0) ),
     ]
 
-    def __init__(self, root, txt_file, transforms=None, ignore_label=19, encoding='cs2carla', mean=[0.286, 0.325, 0.283], std=[0.176, 0.180, 0.177]):
+    def __init__(self, root, txt_file, transforms=None, encoding='carla', mean=[0.286, 0.325, 0.283], std=[0.176, 0.180, 0.177]):
     
         super(SegmentationDataset, self).__init__()
         if encoding == 'carla':
-            self.encoding = self.cs
+            self.encoding = self.carla
         elif encoding == 'cs2carla':
             self.encoding = self.cs2carla
+        elif encoding == 'cs':
+            self.encoding = self.cs
 
         self.id_to_trainId = {cs_class.id: cs_class.train_id for cs_class in self.encoding}
         self.palette = []
@@ -158,31 +160,35 @@ class SegmentationDataset(Dataset):
         self.mean = mean
         self.std = std
 
-    def __getitem__(self, index):
-        img_path, mask_path = self.images[index], self.labels[index]
-        img, mask = Image.open(img_path).convert('RGB'), Image.open(mask_path)
-
+    def encode_image_train_id(self, mask):
         mask = np.array(mask)
         mask_copy = mask.copy()
         for k, v in self.id_to_trainId.items():
             mask_copy[mask == k] = v
-        # mask = Image.fromarray(mask_copy.astype(np.uint8))
+        return mask_copy
+
+    def __getitem__(self, index):
+        img_path, mask_path = self.images[index], self.labels[index]
+        img, mask = Image.open(img_path).convert('RGB'), Image.open(mask_path)
+
+        mask = self.encode_image_train_id(mask)
 
         if self.transforms is not None:
-            transformed = self.transforms(image=np.array(img), mask=mask_copy)
+            transformed = self.transforms(image=np.array(img), mask=mask)
             img = transformed['image']
-            mask_copy = transformed['mask']
+            mask = transformed['mask']
         img = to_tensor(img)
-        mask_copy = torch.from_numpy(mask_copy).type(torch.long)    
-        return img, mask_copy
+        mask = torch.from_numpy(mask).type(torch.long)    
+        return img, mask
 
     def __len__(self):
         return len(self.images)
 
-    def colorize_mask(self, mask):
-        # mask: numpy array of the mask
-        mask = np.array(mask)
-        new_mask = Image.fromarray(mask.astype(np.uint8)).convert('P')
+    def colorize_mask(self, mask, encode_with_train_id=False):
+        mask = np.array(mask, dtype=np.uint8)
+        if encode_with_train_id:
+            mask = self.encode_image_train_id(mask)
+        new_mask = Image.fromarray(mask).convert('P')
         new_mask.putpalette(self.palette)
 
         return new_mask
@@ -213,7 +219,7 @@ class SegmentationDataset(Dataset):
             axis2.imshow(prediction)
             axis2.set_axis_off()
             
-            gt = self.colorize_mask(gt)
+            gt = self.colorize_mask(gt, encode_with_train_id=True)
             axis3.imshow(gt)
             axis3.set_axis_off()
 
@@ -224,28 +230,4 @@ class SegmentationDataset(Dataset):
         figure = np.array(im)
         buf.close()
         plt.close(fig)
-        return figure    
-
-
-# def fetch_dataloader(root, txt_file, split, params, **kwargs):
-#     h, w = params.crop_h, params.crop_w
-
-#     if split == 'train':
-#         transform_train = Compose([RandomCrop(h,w),
-#                     HorizontalFlip(p=0.5), 
-#                     Normalize(mean=mean,std=std)])
-
-#         dataset=SegmentationDataset(root, txt_file, transforms=transform_train, **kwargs)
-#         return DataLoader(dataset, batch_size=params.batch_size_train, shuffle=True, num_workers=params.num_workers, drop_last=True, pin_memory=True)
-
-#     else:
-#         transform_val = Compose( [Normalize(mean=mean,std=std)])
-#         dataset=SegmentationDataset(root, txt_file, transforms=transform_val, **kwargs)
-#         #reduce validation data to speed up training
-#         if "split_validation" in params.dict:
-#             ss = ShuffleSplit(n_splits=1, test_size=params.split_validation, random_state=42)
-#             indexes=range(len(dataset))
-#             split1, split2 = next(ss.split(indexes))
-#             dataset=Subset(dataset, split2)        
-
-#         return DataLoader(dataset, batch_size=params.batch_size_val, shuffle=False, num_workers=params.num_workers, drop_last=True, pin_memory=True)
+        return figure

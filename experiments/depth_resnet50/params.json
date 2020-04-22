@@ -15,5 +15,6 @@
     "activation": "sigmoid",
     "task": "depth",
     "split_validation": 0.2,
-    "ignore_index": 19    
+    "max_depth": 1000,
+    "treshold": 100  
 }

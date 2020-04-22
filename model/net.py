@@ -52,7 +52,7 @@ class BasicBlock(nn.Module):
 
 
 class Transfer(nn.Module):
-    def __init__(self, inplanes, outplanes, middleplanes, activation='relu', stride=1, dilation=1, norm_layer='bn', num_blocks=3):
+    def __init__(self, inplanes, middleplanes, outplanes, activation='relu', stride=1, dilation=1, norm_layer='bn', num_blocks=3):
         super(Transfer, self).__init__()
         layers = []
         layers.append(BasicBlock(inplanes, middleplanes, middleplanes, activation, stride, dilation, norm_layer))
@@ -63,6 +63,19 @@ class Transfer(nn.Module):
 
     def forward(self, x):
         x = self.transfer(x)
+        return x
+
+class AdaptiveNet(nn.Module):
+    def __init__(self, encoder, transfer, decoder):
+        super(AdaptiveNet, self).__init__()
+        self.encoder = encoder
+        self.transfer = transfer
+        self.decoder = decoder
+
+    def forward(self, x):
+        x = self.encoder(x)['out']
+        x = self.transfer(x)
+        x = self.decoder(x)
         return x
 
 
@@ -76,4 +89,9 @@ def get_network(params):
     else:
         net.classifier[-1] = nn.Conv2d(256, params.num_classes, 1, 1 )
     return net
-    
+
+def get_transfer(params):
+    return Transfer(inplanes=2048, middleplanes=1024, outplanes=2048)
+
+def get_adaptive_network(encoder, transfer, decoder):
+    return AdaptiveNet(encoder, transfer, decoder)

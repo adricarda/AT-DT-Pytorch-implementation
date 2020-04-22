@@ -119,4 +119,4 @@ def load_checkpoint(model, optimizer=None, lr_scheduler=None, start_epoch=None,
         start_epoch = checkpoint['epoch']
     if best_value is not None:
         best_value = checkpoint['best_value']
-    return model, optimizer, lr_scheduler, start_epoch, best_value
+    return (model, optimizer, lr_scheduler, start_epoch, best_value)

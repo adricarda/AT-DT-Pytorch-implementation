@@ -25,8 +25,8 @@ from collections import namedtuple
 
 class DepthDataset(Dataset):
     def __init__(self, root, txt_file, transforms=None, 
-                mean=[0.286, 0.325, 0.283], std=[0.176, 0.180, 0.177], 
-                max_depth=1000, threshold=100):
+                max_depth=1000, threshold=100,
+                mean=[0.286, 0.325, 0.283], std=[0.176, 0.180, 0.177]):
 
         super(DepthDataset, self).__init__()
         self.files_txt = txt_file
