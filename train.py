@@ -212,7 +212,7 @@ if __name__ == '__main__':
         opt, max_lr=params.learning_rate, steps_per_epoch=len(train_dl), epochs=params.num_epochs, div_factor=20)
 
     # fetch loss function and metrics
-    loss_fn = get_loss_fn(params.loss_fn, params)
+    loss_fn = get_loss_fn(params)
     # num_classes+1 for background.
     metrics = OrderedDict({})
     for metric in params.metrics:

@@ -85,15 +85,14 @@ if __name__ == '__main__':
     model = get_network(params).to(params.device)
 
     # fetch loss function and metrics
-    loss_fn = get_loss_fn(loss_name=params.loss_fn , ignore_index=19)
+    loss_fn = get_loss_fn(params)
     #num_classes+1 for background.
     metrics = {}
     for metric in params.metrics:
-        metrics[metric]= get_metrics(metrics_name=metric,
-                num_classes=params.num_classes+1, ignore_index=params.ignore_index)
+        metrics[metric]= get_metrics(metric, params)
 
     # Reload weights from the saved file
-    model, _, _, _, _ = utils.load_checkpoint(model, is_best=True, checkpoint_dir=args.checkpoint_dir)
+    model = utils.load_checkpoint(model, is_best=True, checkpoint_dir=args.checkpoint_dir)[0]
 
     # Evaluate
     eval_loss, val_metrics = evaluate(model, loss_fn, val_dl, metric=metrics, params=params)

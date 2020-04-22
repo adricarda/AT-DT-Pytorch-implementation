@@ -50,15 +50,15 @@ class Masked_L1_loss(nn.Module):
         error = torch.abs(gt[valid_map]-prediction[valid_map])/torch.sum(valid_map)
         return torch.sum(error)
 
-def get_loss_fn(loss_name, params):
+def get_loss_fn(params):
 
-    if loss_name=='crossentropy':
+    if params.loss_name=='crossentropy':
         return nn.CrossEntropyLoss(ignore_index=params.ignore_index)
-    # elif loss_name=='beruh':
+    # elif params.loss_name=='beruh':
     #     return BerHu(**kwargs)
-    elif loss_name=='l1':
+    elif params.loss_name=='l1':
         return Masked_L1_loss(threshold=params.threshold)
-    elif loss_name=='l2':
+    elif params.loss_name=='l2':
         return nn.MSELoss()         
     else:
         return nn.CrossEntropyLoss(ignore_index=params.ignore_index)
