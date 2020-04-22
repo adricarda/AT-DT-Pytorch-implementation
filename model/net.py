@@ -23,6 +23,13 @@ class Net(nn.Module):
     def forward(self, s):
         pass
 
+class Transfer(nn.Module):
+    def __init__(self, params):
+        super(Net, self).__init__()
+
+    def forward(self, s):
+        pass    
+
 def get_network(params):
     if params.architecture == 'deeplab_resnet101':
         net = deeplabv3_resnet101(pretrained=params.pretrained)
