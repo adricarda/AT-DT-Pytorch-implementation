@@ -16,5 +16,5 @@
     "task": "depth",
     "split_validation": 0.2,
     "max_depth": 1000,
-    "treshold": 100  
+    "threshold": 100  
 }

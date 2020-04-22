@@ -359,7 +359,7 @@ class RMSELog(MSE):
 
 
 class Threshold():
-    def __init__(self, threshold=1.25, max_depth=100, min_depth=0.001, **kwargs):
+    def __init__(self, threshold=1.25, max_depth=100, min_depth=0.001):
         super(Threshold, self).__init__()
         self.errors = 0
         self._num_examples = 0
@@ -405,26 +405,26 @@ class Threshold():
       error = self.errors / self._num_examples
       return [error]
 
-def get_metrics(metrics_name="iou", **kwargs):
+def get_metrics(metrics_name, params):
     if metrics_name=='iou':
-        return IoU(**kwargs)
+        return IoU(num_classes=params.num_classes+1, ignore_index=params.ignore_index)
     if metrics_name=='accuracy':
-        return Accuracy(**kwargs)
+        return Accuracy(num_classes=params.num_classes+1, ignore_index=params.ignore_index)
     if metrics_name=='mse':
-        return MSE(**kwargs)        
+        return MSE()        
     if metrics_name=='rmse':
-        return RMSE(**kwargs)
+        return RMSE()
     if metrics_name=='rmse_log':
-        return RMSELog(**kwargs)
+        return RMSELog()
     if metrics_name=='mae':
-        return MAE(**kwargs)
+        return MAE()
     if metrics_name=='abs_rel':
-        return MAE(relative=True, **kwargs)
+        return MAE(relative=True)
     if metrics_name=='sq_rel':
-        return MSE(relative=True, **kwargs)
+        return MSE(relative=True)
     if metrics_name=='delta1':
-        return Threshold(threshold=1.25, **kwargs)
+        return Threshold(threshold=1.25)
     if metrics_name=='delta2':
-        return Threshold(threshold=1.25**2, **kwargs)
+        return Threshold(threshold=1.25**2)
     if metrics_name=='delta1':
-        return Threshold(threshold=1.25**3, **kwargs)                    
+        return Threshold(threshold=1.25**3)                    

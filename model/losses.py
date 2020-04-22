@@ -36,7 +36,7 @@ import torch.nn.functional as F
 #         return loss
 
 class Masked_L1_loss(nn.Module):
-    def __init__(self, threshold=100, **kwargs):
+    def __init__(self, threshold=100):
         self.threshold = threshold
         self.e = 1e-10
         super().__init__()
@@ -50,15 +50,15 @@ class Masked_L1_loss(nn.Module):
         error = torch.abs(gt[valid_map]-prediction[valid_map])/torch.sum(valid_map)
         return torch.sum(error)
 
-def get_loss_fn(loss_name='crossentropy', **kwargs):
+def get_loss_fn(loss_name, params):
 
     if loss_name=='crossentropy':
-        return nn.CrossEntropyLoss(**kwargs)
+        return nn.CrossEntropyLoss(ignore_index=params.ignore_index)
     # elif loss_name=='beruh':
     #     return BerHu(**kwargs)
     elif loss_name=='l1':
-        return Masked_L1_loss(**kwargs)
+        return Masked_L1_loss(threshold=params.threshold)
     elif loss_name=='l2':
         return nn.MSELoss()         
     else:
-        return nn.CrossEntropyLoss(**kwargs)
+        return nn.CrossEntropyLoss(ignore_index=params.ignore_index)

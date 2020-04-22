@@ -212,11 +212,11 @@ if __name__ == '__main__':
         opt, max_lr=params.learning_rate, steps_per_epoch=len(train_dl), epochs=params.num_epochs, div_factor=20)
 
     # fetch loss function and metrics
-    loss_fn = get_loss_fn(loss_name=params.loss_fn, ignore_index=19)
+    loss_fn = get_loss_fn(params.loss_fn, params)
     # num_classes+1 for background.
     metrics = OrderedDict({})
     for metric in params.metrics:
-        metrics[metric] = get_metrics(metrics_name=metric, num_classes=params.num_classes+1, ignore_index=params.ignore_index)
+        metrics[metric] = get_metrics(metric, params)
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
