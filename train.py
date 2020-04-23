@@ -207,7 +207,6 @@ if __name__ == '__main__':
     # fetch dataloaders
     train_dl = dataloader.fetch_dataloader(
         args.data_dir, args.txt_train, 'train', params)
-
     val_dl = dataloader.fetch_dataloader(
         args.data_dir, args.txt_val, 'val', params)
 
