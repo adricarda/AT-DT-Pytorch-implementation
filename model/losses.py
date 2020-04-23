@@ -43,7 +43,7 @@ class Masked_L1_loss(nn.Module):
         
     def forward(self, prediction, target):
         gt = target.clone()
-        prediction = prediction.squeeze()
+        prediction = prediction.squeeze(dim=1)
         valid_map = gt>0
         gt[gt>self.threshold] = self.threshold
         gt /= self.threshold

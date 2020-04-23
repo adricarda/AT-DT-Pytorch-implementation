@@ -40,7 +40,7 @@ def fetch_dataloader(root, txt_file, split, params):
             dataset = DepthDataset(root, txt_file, transforms=transform_train, max_depth=params.max_depth, threshold=params.threshold, mean=mean, std=std)
         elif params.task == 'segmentation':
             dataset = SegmentationDataset(root, txt_file, transforms=transform_train, encoding=params.encoding, mean=mean, std=std)        
-        return DataLoader(dataset, batch_size=params.batch_size_train, shuffle=True, num_workers=params.num_workers, drop_last=True, pin_memory=True)
+        return DataLoader(dataset, batch_size=params.batch_size_train, shuffle=True, num_workers=params.num_workers, pin_memory=True)
 
     elif split == 'val':
         if params.task == 'depth':
@@ -55,4 +55,4 @@ def fetch_dataloader(root, txt_file, split, params):
             split1, split2 = next(ss.split(indexes))
             dataset=Subset(dataset, split2)        
 
-        return DataLoader(dataset, batch_size=params.batch_size_val, shuffle=False, num_workers=params.num_workers, drop_last=True, pin_memory=True)
+        return DataLoader(dataset, batch_size=params.batch_size_val, shuffle=False, num_workers=params.num_workers, pin_memory=True)
