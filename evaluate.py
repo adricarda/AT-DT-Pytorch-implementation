@@ -9,7 +9,7 @@ import torch
 import utils
 from model.net import get_network
 from tqdm import tqdm
-import dataloader.dataloader_depth as dataloader_depth
+import dataloader.dataloader as dataloader
 from model.losses import get_loss_fn
 from model.metrics import get_metrics
 
@@ -20,39 +20,42 @@ parser.add_argument('--model_dir', default='experiments/baseline',
                     help="Directory containing params.json")
 parser.add_argument('--checkpoint_dir', default="experiments/baseline/checkpoints",
                     help="Directory containing weights to reload before \
-                    training") 
+                    training")
+parser.add_argument('--txt_val', default='/content/drive/My Drive/atdt/input_list_val_carla.txt',
+                    help="Txt file containing path to validation images")
 
 
-def evaluate(model,loss_fn,dataset_dl,opt=None, metrics=None, params=None):
+def evaluate(model, loss_fn, dataset_dl, metrics=None, params=None):
 
     # set model to evaluation mode
     model.eval()
-    running_loss=utils.RunningAverage()
-    num_batches=len(dataset_dl)
+    running_loss = utils.RunningAverage()
+    num_batches = len(dataset_dl)
     if metrics is not None:
-        for metric_name, metric in metrics.items(): 
+        for metric_name, metric in metrics.items():
             metric.reset()
 
-    with torch.no_grad():        
+    with torch.no_grad():
         for (xb, yb) in tqdm(dataset_dl):
-            xb=xb.to(params.device)
-            yb=yb.to(params.device)    
-            output=model(xb)['out']
+            xb = xb.to(params.device)
+            yb = yb.to(params.device)
+            output = model(xb)['out']
 
             loss_b = loss_fn(output, yb)
             running_loss.update(loss_b.item())
-            if metrics is not None:            
+            if metrics is not None:
                 # output=torch.argmax(output.detach(), dim=1)
-                for metric_name, metric in metrics.items(): 
+                for metric_name, metric in metrics.items():
                     metric.add(output, yb)
 
     if metrics is not None:
         metrics_results = {}
-        for metric_name, metric in metrics.items(): 
-            metrics_results[metric_name] = metric.value()                  
+        for metric_name, metric in metrics.items():
+            metrics_results[metric_name] = metric.value()
         return running_loss(), metrics_results
-    else:   
+    else:
         return running_loss(), None
+
 
 if __name__ == '__main__':
     """
@@ -79,24 +82,28 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(seed)
 
     # fetch dataloaders
-    val_dl = dataloader_depth.fetch_dataloader(args.data_dir, 'val', params)
+    val_dl = dataloader.fetch_dataloader(
+        args.data_dir, args.txt_val, 'val', params)
 
     # Define the model
     model = get_network(params).to(params.device)
 
     # fetch loss function and metrics
     loss_fn = get_loss_fn(params)
-    #num_classes+1 for background.
+    # num_classes+1 for background.
     metrics = {}
     for metric in params.metrics:
-        metrics[metric]= get_metrics(metric, params)
+        metrics[metric] = get_metrics(metric, params)
 
     # Reload weights from the saved file
-    model = utils.load_checkpoint(model, is_best=True, checkpoint_dir=args.checkpoint_dir)[0]
+    model = utils.load_checkpoint(
+        model, is_best=True, checkpoint_dir=args.checkpoint_dir)[0]
 
     # Evaluate
-    eval_loss, val_metrics = evaluate(model, loss_fn, val_dl, metric=metrics, params=params)
+    eval_loss, val_metrics = evaluate(
+        model, loss_fn, val_dl, metrics=metrics, params=params)
     best_json_path = os.path.join(args.model_dir, "evaluation.json")
-    for val_metric_name, val_metric_results in val_metrics.items(): 
-        logging.info("%s: %.3f" %(val_metric_name, val_metric_results))
-    utils.save_dict_to_json(val_metrics, best_json_path)      
+    for val_metric_name, val_metric_results in val_metrics.items():
+        print("{}: {}".format(val_metric_name, val_metric_results))
+        logging.info("{}: {}".format(val_metric_name, val_metric_results))
+    utils.save_dict_to_json(val_metrics, best_json_path)

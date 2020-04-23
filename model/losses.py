@@ -52,13 +52,13 @@ class Masked_L1_loss(nn.Module):
 
 def get_loss_fn(params):
 
-    if params.loss_name=='crossentropy':
+    if params.loss_fn=='crossentropy':
         return nn.CrossEntropyLoss(ignore_index=params.ignore_index)
     # elif params.loss_name=='beruh':
     #     return BerHu(**kwargs)
-    elif params.loss_name=='l1':
+    elif params.loss_fn=='l1':
         return Masked_L1_loss(threshold=params.threshold)
-    elif params.loss_name=='l2':
+    elif params.loss_fn=='l2':
         return nn.MSELoss()         
     else:
         return nn.CrossEntropyLoss(ignore_index=params.ignore_index)

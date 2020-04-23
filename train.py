@@ -34,9 +34,11 @@ parser.add_argument('--txt_train', default='/content/drive/My Drive/atdt/input_l
 parser.add_argument('--txt_val', default='/content/drive/My Drive/atdt/input_list_val_carla.txt',
                     help="Txt file containing path to validation images")
 
+
 def get_lr(opt):
     for param_group in opt.param_groups:
         return param_group['lr']
+
 
 def inference(model, batch):
     model.eval()
@@ -70,7 +72,7 @@ def train_epoch(model, loss_fn, dataset_dl, opt=None, lr_scheduler=None, metrics
             lr_scheduler.step()
 
         running_loss.update(loss_b.item())
-        
+
         if metrics is not None:
             for metric_name, metric in metrics.items():
                 metric.add(output.detach(), yb)
@@ -92,10 +94,8 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
     best_value = -float('inf')
     start_epoch = 0
 
-    for xb, yb in val_dl:
-        batch_sample = xb
-        batch_gt = yb
-        break
+    batch_sample_train, batch_gt_train = next(iter(train_dl))
+    batch_sample_val, batch_gt_val = next(iter(val_dl))
 
     if os.path.exists(ckpt_file_path):
         model, opt, lr_scheduler, start_epoch, best_value = utils.load_checkpoint(model, opt, lr_scheduler,
@@ -109,7 +109,8 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
     for epoch in range(start_epoch, params.num_epochs-1):
         # Run one epoch
         current_lr = get_lr(opt)
-        logging.info('Epoch {}/{}, current lr={}'.format(epoch, params.num_epochs-1, current_lr))
+        logging.info('Epoch {}/{}, current lr={}'.format(epoch,
+                                                         params.num_epochs-1, current_lr))
         writer.add_scalar('Learning_rate', current_lr, epoch)
 
         model.train()
@@ -131,10 +132,17 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
                 'Validation': val_metric_results[0],
             }, epoch)
 
-        predictions = inference(model, batch_sample)
-        plot = train_dl.dataset.get_predictions_plot(
-            batch_sample, predictions.cpu(), batch_gt)
-        writer.add_image('Predictions', plot, epoch, dataformats='HWC')
+        if epoch % 5 == 0:
+            predictions = inference(model, batch_sample_train)
+            plot = train_dl.dataset.get_predictions_plot(
+                batch_sample_train, predictions.cpu(), batch_gt_train)
+            writer.add_image('Predictions_train', plot,
+                             epoch, dataformats='HWC')
+
+            predictions = inference(model, batch_sample_val)
+            plot = train_dl.dataset.get_predictions_plot(
+                batch_sample_val, predictions.cpu(), batch_gt_val)
+            writer.add_image('Predictions_val', plot, epoch, dataformats='HWC')
 
         current_value = list(val_metrics.values())[0][0]
         is_best = current_value >= best_value
