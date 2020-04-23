@@ -18,9 +18,11 @@ experiments/resnet50/model_best.tar
 experiments/resnet50/checkpoint.tar
 experiments/resnet50/train.log
 experiments/depth_resnet50/tensorboard/
-experiments/segmentation_resnet50/tensorboard/
 experiments/depth_resnet50/train.log
 experiments/depth_resnet50/checkpoint.tar
 experiments/depth_resnet50/metrics_val_best_weights.json
 experiments/depth_resnet50/model_best.tar
 experiments/depth_resnet50/train.log
+experiments/segmentation_resnet50/logs/
+experiments/segmentation_resnet50/tensorboard/
+experiments/segmentation_resnet50/ckpt/

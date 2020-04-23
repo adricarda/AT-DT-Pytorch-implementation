@@ -24,7 +24,7 @@ parser.add_argument('--data_dir', default='/content/drive/My Drive/atdt',
                     help="Directory containing the dataset")
 parser.add_argument('--model_dir', default='experiments/baseline',
                     help="Directory containing params.json")
-parser.add_argument('--checkpoint_dir', default="experiments/baseline",
+parser.add_argument('--checkpoint_dir', default="experiments/baseline/ckpt",
                     help="Directory containing weights to reload before \
                     training")
 parser.add_argument('--tensorboard_dir', default="experiments/baseline/tensorboard",
@@ -199,16 +199,20 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(seed)
 
     # Set the logger
-    utils.set_logger(os.path.join(args.model_dir, 'train.log'))
+    log_dir = os.path.join(args.model_dir, "logs")
+    if not os.path.exists(log_dir):
+        print("Making log directory {}".format(log_dir))
+        os.mkdir(log_dir)
+    utils.set_logger(os.path.join(log_dir, "train.log"))
 
     # Create the input data pipeline
     logging.info("Loading the datasets...")
 
     # fetch dataloaders
     train_dl = dataloader.fetch_dataloader(
-        args.data_dir, args.txt_train, 'train', params)
+        args.data_dir, args.txt_train, "train", params)
     val_dl = dataloader.fetch_dataloader(
-        args.data_dir, args.txt_val, 'val', params)
+        args.data_dir, args.txt_val, "val", params)
 
     logging.info("- done.")
 
