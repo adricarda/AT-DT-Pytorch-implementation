@@ -6,7 +6,7 @@ import os
 import random
 import numpy as np
 import torch
-import utils
+import utils.utils as utils
 from model.net import get_network
 from tqdm import tqdm
 import dataloader.dataloader as dataloader
@@ -44,7 +44,6 @@ def evaluate(model, loss_fn, dataset_dl, metrics=None, params=None):
             loss_b = loss_fn(output, yb)
             running_loss.update(loss_b.item())
             if metrics is not None:
-                # output=torch.argmax(output.detach(), dim=1)
                 for metric_name, metric in metrics.items():
                     metric.add(output, yb)
 

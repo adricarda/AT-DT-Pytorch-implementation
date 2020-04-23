@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import random
 import dataloader.dataloader as dataloader
-import utils
+import utils.utils as utils
 from evaluate import evaluate
 from model.losses import get_loss_fn
 from model.metrics import get_metrics

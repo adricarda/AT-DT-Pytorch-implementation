@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python3 train_transfer.py \
+python3 ../train_transfer.py \
     --data_dir '/content/drive/My Drive/atdt' \
     --model_dir_source '/content/drive/My Drive/Depth/experiments/depth_resnet50' \
     --checkpoint_dir_source '/content/drive/My Drive/Depth/experiments/depth_resnet50' \

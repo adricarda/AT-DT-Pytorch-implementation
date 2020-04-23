@@ -3,9 +3,10 @@ import math
 import argparse
 import os
 import random
-import utils
+import utils.utils as utils
+import numpy as np
 import matplotlib.pyplot as plt
-import dataloader.dataloader_carla as data_loader
+import dataloader.dataloader as data_loader
 from model.net import get_network
 from model.losses import get_loss_fn
 import torch.optim as optim
