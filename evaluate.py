@@ -1,7 +1,6 @@
 """Evaluates the model"""
 
 import argparse
-import logging
 import os
 import random
 import numpy as np
@@ -66,7 +65,6 @@ if __name__ == '__main__':
     assert os.path.isfile(
         json_path), "No json configuration file found at {}".format(json_path)
     params = utils.Params(json_path)
-    ckpt_filename = "checkpoint.tar"
     # use GPU if available
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     params.device = device
@@ -96,13 +94,13 @@ if __name__ == '__main__':
 
     # Reload weights from the saved file
     model = utils.load_checkpoint(
-        model, is_best=True, checkpoint_dir=args.checkpoint_dir)[0]
+        model, is_best=True, ckpt_dir=args.checkpoint_dir)[0]
 
     # Evaluate
     eval_loss, val_metrics = evaluate(
         model, loss_fn, val_dl, metrics=metrics, params=params)
-    best_json_path = os.path.join(args.model_dir, "evaluation.json")
+    
+    best_json_path = os.path.join(args.model_dir, "logs/evaluation.json")
     for val_metric_name, val_metric_results in val_metrics.items():
         print("{}: {}".format(val_metric_name, val_metric_results))
-        logging.info("{}: {}".format(val_metric_name, val_metric_results))
     utils.save_dict_to_json(val_metrics, best_json_path)

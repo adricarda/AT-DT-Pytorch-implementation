@@ -30,11 +30,11 @@ parser.add_argument('--model_dir_target', default='experiments/segmentation_resn
 parser.add_argument('--model_dir_transfer', default='experiments/transfer_baseline',
                     help="Directory containing params.json")
 
-parser.add_argument('--checkpoint_dir_source', default="experiments/depth_resnet50",
+parser.add_argument('--checkpoint_dir_source', default="experiments/depth_resnet50/ckpt",
                     help="Directory containing source model weights")
-parser.add_argument('--checkpoint_dir_target', default="experiments/segmentation_resnet50",
+parser.add_argument('--checkpoint_dir_target', default="experiments/segmentation_resnet50/ckpt",
                     help="Directory containing weights target model weights")
-parser.add_argument('--checkpoint_dir_transfer', default="experiments/transfer_baseline",
+parser.add_argument('--checkpoint_dir_transfer', default="experiments/transfer_baseline/ckpt",
                     help="Directory containing weights target model weights")
 
 parser.add_argument('--tensorboard_dir', default="experiments/transfer_baseline/tensorboard",
@@ -96,7 +96,7 @@ def train_epoch(source_encoder, target_encoder, transfer, loss_fn, dataset_dl, o
 
 
 def train_and_evaluate(model_source, model_target, transfer, train_dl, val_dl, opt, loss_fn, metrics, params,
-                       lr_scheduler, checkpoint_dir, ckpt_filename, writer):
+                       lr_scheduler, checkpoint_dir, ckpt_filename, log_dir, writer):
 
     ckpt_file_path = os.path.join(checkpoint_dir, ckpt_filename)
     best_value = -float('inf')
@@ -109,7 +109,7 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl, val_dl, o
 
     if os.path.exists(ckpt_file_path):
         model, opt, lr_scheduler, start_epoch, best_value = utils.load_checkpoint(transfer, opt, lr_scheduler,
-                                                                                  start_epoch, False, best_value, checkpoint_dir, ckpt_filename)
+                                                                start_epoch, False, best_value, checkpoint_dir, ckpt_filename)
         print("=> loaded transfer checkpoint form {} (epoch {})".format(
             ckpt_file_path, start_epoch))
     else:
@@ -162,7 +162,7 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl, val_dl, o
             best_value = current_value
             # Save best val metrics in a json file in the model directory
             best_json_path = os.path.join(
-                checkpoint_dir, "metrics_val_best_weights.json")
+                log_dir, "metrics_val_best_weights.json")
             utils.save_dict_to_json(val_metrics, best_json_path)
 
         # Save weights
@@ -172,7 +172,8 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl, val_dl, o
                                'scheduler_dict': lr_scheduler.state_dict(),
                                'best_value': best_value},
                               is_best=is_best,
-                              checkpoint_dir=checkpoint_dir)
+                              checkpoint_dir=checkpoint_dir,
+                              filename=ckpt_filename)
 
         logging.info("\ntrain loss: %.3f, val loss: %.3f" %
                      (train_loss, val_loss))
@@ -219,7 +220,11 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(seed)
 
     # Set the logger
-    utils.set_logger(os.path.join(args.model_dir_transfer, 'train.log'))
+    log_dir = os.path.join(args.model_dir_transfer, "logs")
+    if not os.path.exists(log_dir):
+        print("Making log directory {}".format(log_dir))
+        os.mkdir(log_dir)
+    utils.set_logger(os.path.join(log_dir, "train.log"))
 
     # Create the input data pipeline
     logging.info("Loading the datasets...")
@@ -239,18 +244,18 @@ if __name__ == '__main__':
     transfer = get_transfer(params_transfer).to(params_transfer.device)
 
     #load source and target model before training and extract backbones
-    # ckpt_source_file_path = os.path.join(args.checkpoint_dir_source, ckpt_filename)
-    # if os.path.exists(ckpt_source_file_path):
-    #     model_source = utils.load_checkpoint(model_source, is_best=True)[0]
-    #     print("=> loaded source model checkpoint form {}".format(ckpt_source_file_path))
-    # else:
-    #     print("=> Initializing source model from scratch")
-    # ckpt_target_file_path = os.path.join(args.checkpoint_dir_target, ckpt_filename)
-    # if os.path.exists(ckpt_target_file_path):
-    #     model_target = utils.load_checkpoint(model_target, is_best=True)[0]
-    #     print("=> loaded target model checkpoint form {}".format(ckpt_target_file_path))
-    # else:
-    #     print("=> Initializing target model from scratch")
+    ckpt_source_file_path = os.path.join(args.checkpoint_dir_source, ckpt_filename)
+    if os.path.exists(ckpt_source_file_path):
+        model_source = utils.load_checkpoint(model_source, is_best=True)[0]
+        print("=> loaded source model checkpoint form {}".format(ckpt_source_file_path))
+    else:
+        print("=> Initializing source model from scratch")
+    ckpt_target_file_path = os.path.join(args.checkpoint_dir_target, ckpt_filename)
+    if os.path.exists(ckpt_target_file_path):
+        model_target = utils.load_checkpoint(model_target, is_best=True)[0]
+        print("=> loaded target model checkpoint form {}".format(ckpt_target_file_path))
+    else:
+        print("=> Initializing target model from scratch")
     
     for p in model_source.parameters():
         p.requires_grad = False
@@ -275,4 +280,4 @@ if __name__ == '__main__':
     logging.info("Starting training for {} epoch(s)".format(params_transfer.num_epochs))
 
     train_and_evaluate(model_source, model_target, transfer, train_dl, val_dl, opt, loss_fn, metrics,
-                       params_transfer, lr_scheduler, args.checkpoint_dir_transfer, ckpt_filename, writer)
+                       params_transfer, lr_scheduler, args.checkpoint_dir_transfer, ckpt_filename, log_dir, writer)

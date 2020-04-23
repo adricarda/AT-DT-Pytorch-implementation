@@ -88,22 +88,20 @@ def save_dict_to_json(d, json_path):
         json.dump(d, f, indent=4)
 
 
-def save_checkpoint(state, is_best, checkpoint_dir='./', filename='checkpoint.tar'):
-    filepath = os.path.join(checkpoint_dir, filename)
-    if not os.path.exists(checkpoint_dir):
-        print("Checkpoint Directory does not exist! Making directory {}".format(checkpoint_dir))
-        os.mkdir(checkpoint_dir)
+def save_checkpoint(state, is_best, ckpt_dir='./', filename='checkpoint.tar'):
+    filepath = os.path.join(ckpt_dir, filename)
+    if not os.path.exists(ckpt_dir):
+        print("Checkpoint Directory does not exist! Making directory {}".format(ckpt_dir))
+        os.mkdir(ckpt_dir)
     torch.save(state, filepath)
     if is_best:
         shutil.copyfile(filepath, filepath.replace(filename, 'model_best.tar'))
 
 
 def load_checkpoint(model, optimizer=None, lr_scheduler=None, start_epoch=None,
-                    is_best=False, best_value=None, checkpoint_dir='./', filename='checkpoint.tar'):
-    filepath = os.path.join(checkpoint_dir, filename)
+                    is_best=False, best_value=None, ckpt_dir=None, filename='checkpoint.tar'):
+    filepath = os.path.join(ckpt_dir, filename)
     
-    if not os.path.exists(checkpoint_dir):
-        raise("File doesn't exist {}".format(checkpoint_dir))
     if not is_best:
         checkpoint = torch.load(filepath)
     else:

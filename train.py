@@ -87,7 +87,7 @@ def train_epoch(model, loss_fn, dataset_dl, opt=None, lr_scheduler=None, metrics
 
 
 def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
-                       lr_scheduler, checkpoint_dir, ckpt_filename, writer):
+                       lr_scheduler, checkpoint_dir, log_dir, ckpt_filename, writer):
 
     ckpt_file_path = os.path.join(checkpoint_dir, ckpt_filename)
     best_model_wts = copy.deepcopy(model.state_dict())
@@ -153,7 +153,7 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
             best_value = current_value
             # Save best val metrics in a json file in the model directory
             best_json_path = os.path.join(
-                checkpoint_dir, "metrics_val_best_weights.json")
+                log_dir, "metrics_val_best_weights.json")
             utils.save_dict_to_json(val_metrics, best_json_path)
 
         # Save weights
@@ -232,4 +232,4 @@ if __name__ == '__main__':
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
     train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics,
-                       params, lr_scheduler, args.checkpoint_dir, ckpt_filename, writer)
+                       params, lr_scheduler, args.checkpoint_dir, log_dir, ckpt_filename, writer)
