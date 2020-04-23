@@ -52,7 +52,6 @@ def inference(model, batch):
     model.eval()
     with torch.no_grad():
         y_pred = model(batch.to(device))
-        y_pred = y_pred
     return y_pred
 
 
