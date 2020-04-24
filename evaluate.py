@@ -28,7 +28,10 @@ def evaluate(model, loss_fn, dataset_dl, metrics=None, params=None):
 
     # set model to evaluation mode
     model.eval()
-    running_loss = utils.RunningAverage()
+    metrics_results = {}
+
+    if loss_fn is not None:
+        running_loss = utils.RunningAverage()
     num_batches = len(dataset_dl)
     if metrics is not None:
         for metric_name, metric in metrics.items():
@@ -40,20 +43,21 @@ def evaluate(model, loss_fn, dataset_dl, metrics=None, params=None):
             yb = yb.to(params.device)
             output = model(xb)['out']
 
-            loss_b = loss_fn(output, yb)
-            running_loss.update(loss_b.item())
+            if loss_fn is not None:
+                loss_b = loss_fn(output, yb)
+                running_loss.update(loss_b.item())
             if metrics is not None:
                 for metric_name, metric in metrics.items():
                     metric.add(output, yb)
 
     if metrics is not None:
-        metrics_results = {}
         for metric_name, metric in metrics.items():
             metrics_results[metric_name] = metric.value()
+    
+    if loss_fn is not None:
         return running_loss(), metrics_results
     else:
-        return running_loss(), None
-
+        return None, metrics_results
 
 if __name__ == '__main__':
     """

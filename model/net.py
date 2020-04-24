@@ -73,10 +73,12 @@ class AdaptiveNet(nn.Module):
         self.decoder = decoder
 
     def forward(self, x):
-        x = self.encoder(x)['out']
+        input_shape = x.shape[-2:]
+        x = self.encoder(x)["out"]
         x = self.transfer(x)
         x = self.decoder(x)
-        return x
+        x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=False)
+        return {"out": x}
 
 
 def get_network(params):

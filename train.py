@@ -87,11 +87,12 @@ def train_epoch(model, loss_fn, dataset_dl, opt=None, lr_scheduler=None, metrics
 
 
 def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
-                       lr_scheduler, checkpoint_dir, log_dir, ckpt_filename, writer):
+                       lr_scheduler, checkpoint_dir, ckpt_filename, log_dir, writer):
 
     ckpt_file_path = os.path.join(checkpoint_dir, ckpt_filename)
     best_model_wts = copy.deepcopy(model.state_dict())
     best_value = -float('inf')
+    early_stopping = utils.EarlyStopping(patience=7, verbose=True)
     start_epoch = 0
 
     batch_sample_train, batch_gt_train = next(iter(train_dl))
@@ -99,7 +100,7 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
 
     if os.path.exists(ckpt_file_path):
         model, opt, lr_scheduler, start_epoch, best_value = utils.load_checkpoint(model, opt, lr_scheduler,
-                                                                                  start_epoch, False, best_value, checkpoint_dir, ckpt_filename)
+                                start_epoch, False, best_value, checkpoint_dir, ckpt_filename)
 
         print("=> loaded checkpoint form {} (epoch {})".format(
             ckpt_file_path, start_epoch))
@@ -163,7 +164,8 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
                                'scheduler_dict': lr_scheduler.state_dict(),
                                'best_value': best_value},
                               is_best=is_best,
-                              checkpoint_dir=checkpoint_dir)
+                              ckpt_dir=checkpoint_dir,
+                              filename=ckpt_filename)
 
         logging.info("\ntrain loss: %.3f, val loss: %.3f" %
                      (train_loss, val_loss))
@@ -172,6 +174,11 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
                 train_metric_name, train_metric_results[0], val_metric_name, val_metric_results[0]))
 
         logging.info("-"*20)
+
+        early_stopping(val_loss)
+        if early_stopping.early_stop:
+            logging.info("Early stopping")
+            break
 
 
 if __name__ == '__main__':
@@ -232,4 +239,4 @@ if __name__ == '__main__':
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
     train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics,
-                       params, lr_scheduler, args.checkpoint_dir, log_dir, ckpt_filename, writer)
+                       params, lr_scheduler, args.checkpoint_dir, ckpt_filename, log_dir, writer)
