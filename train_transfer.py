@@ -121,7 +121,7 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl, val_dl_so
 
     adpative_model = get_adaptive_network(source_encoder, transfer, target_decoder)
 
-    for epoch in range(start_epoch, params.num_epochs-1):
+    for epoch in range(start_epoch, params.num_epochs):
         # Run one epoch
         current_lr = get_lr(opt)
         logging.info('Epoch {}/{}, current lr={}'.format(epoch, params.num_epochs-1, current_lr))
@@ -153,7 +153,7 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl, val_dl_so
                 'Validation_target': val_metric_results_t[0],
             }, epoch)
 
-        if epoch % 5 == 0:
+        if epoch % 5 == 0 or epoch==params.num_epochs-1:
             predictions = inference(adpative_model, batch_sample_source)
             plot = train_dl.dataset.get_predictions_plot(
                 batch_sample_source, predictions.cpu(), batch_gt_source)
