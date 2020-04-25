@@ -1,17 +1,7 @@
-import random
-import os
-import io
 import torch
-import numpy as np
-import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
 from sklearn.model_selection import ShuffleSplit
 from torch.utils.data import Subset
-from torchvision.transforms.functional import to_tensor, to_pil_image
-from torch.utils.data import DataLoader, ConcatDataset, Dataset
-from dataloader.dataloader_depth import DepthDataset
-from dataloader.dataloader_semantic import SegmentationDataset
-from PIL import Image
+from torch.utils.data import DataLoader
 from albumentations import (
     HorizontalFlip,
     Compose,
@@ -19,9 +9,8 @@ from albumentations import (
     Normalize,
     RandomCrop
     )
-from torch.utils.data import Dataset, DataLoader
-from collections import namedtuple
-
+from dataloader.dataloader_depth import DepthDataset
+from dataloader.dataloader_semantic import SegmentationDataset
 
 
 def fetch_dataloader(root, txt_file, split, params):

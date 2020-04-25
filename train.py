@@ -90,9 +90,8 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
                        lr_scheduler, checkpoint_dir, ckpt_filename, log_dir, writer):
 
     ckpt_file_path = os.path.join(checkpoint_dir, ckpt_filename)
-    best_model_wts = copy.deepcopy(model.state_dict())
     best_value = -float('inf')
-    early_stopping = utils.EarlyStopping(patience=7, verbose=True)
+    early_stopping = utils.EarlyStopping(patience=10, verbose=True)
     start_epoch = 0
 
     batch_sample_train, batch_gt_train = next(iter(train_dl))
@@ -101,7 +100,6 @@ def train_and_evaluate(model, train_dl, val_dl, opt, loss_fn, metrics, params,
     if os.path.exists(ckpt_file_path):
         model, opt, lr_scheduler, start_epoch, best_value = utils.load_checkpoint(model, opt, lr_scheduler,
                                 start_epoch, False, best_value, checkpoint_dir, ckpt_filename)
-
         print("=> loaded checkpoint form {} (epoch {})".format(
             ckpt_file_path, start_epoch))
     else:

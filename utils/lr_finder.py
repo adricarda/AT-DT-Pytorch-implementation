@@ -23,8 +23,7 @@ parser.add_argument('--checkpoint_dir', default=None,
                     training")
 parser.add_argument('--txt_train', default='/content/drive/My Drive/atdt/input_list_train_carla.txt',
                     help="Txt file containing path to training images")
-parser.add_argument('--txt_val', default='/content/drive/My Drive/atdt/input_list_val_carla.txt',
-                    help="Txt file containing path to validation images")                    
+                  
 
 def find_lr(data_ld, opt, model, criterion, device, init_value = 1e-8, final_value=10., beta = 0.98):
     num = len(data_ld)-1

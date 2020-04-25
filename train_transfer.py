@@ -101,7 +101,7 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl, val_dl_so
 
     ckpt_file_path = os.path.join(checkpoint_dir, ckpt_filename)
     best_value = -float('inf')
-    early_stopping = utils.EarlyStopping(patience=7, verbose=True)
+    early_stopping = utils.EarlyStopping(patience=10, verbose=True)
     start_epoch = 0
 
     batch_sample_source, batch_gt_source = next(iter(val_dl_source))
