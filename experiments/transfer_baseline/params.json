@@ -5,7 +5,7 @@
     "batch_size_val": 1,
     "crop_h": 512,
     "crop_w": 512,
-    "num_epochs": 70,
+    "num_epochs": 32,
     "num_workers": 4,
     "start_epoch": 0,
     "loss_fn": "l2",

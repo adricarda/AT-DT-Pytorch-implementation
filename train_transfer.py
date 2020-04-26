@@ -39,7 +39,7 @@ parser.add_argument('--checkpoint_dir_transfer', default="experiments/transfer_b
 
 parser.add_argument('--tensorboard_dir', default="experiments/transfer_baseline/tensorboard",
                     help="Directory for Tensorboard data")
-parser.add_argument('--txt_train', default='/content/drive/My Drive/atdt/input_list_train_mixed_carla_cityscapes.txt',
+parser.add_argument('--txt_train', default='/content/drive/My Drive/atdt/input_list_train_carla.txt',
                     help="Txt file containing path to training images")
 parser.add_argument('--txt_val_source', default='/content/drive/My Drive/atdt/input_list_val_carla.txt',
                     help="Txt file containing path to validation images source dataset")
