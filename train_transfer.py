@@ -132,7 +132,7 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl_all, train
 
     for epoch in range(start_epoch, params.num_epochs):
         # Run one epoch
-        current_lr = get_lr(opt)
+        current_lr = get_lr(opt1)
         logging.info('Epoch {}/{}, current lr={}'.format(epoch,
                                                          params.num_epochs-1, current_lr))
         writer.add_scalar('Learning_rate', current_lr, epoch)
