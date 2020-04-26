@@ -95,29 +95,4 @@ class DepthDataset(Dataset):
         figure = np.array(im)
         buf.close()
         plt.close(fig)
-        return figure    
-
-# def fetch_dataloader(root, txt_file, split, params, **kwargs):
-#     h, w = params.crop_h, params.crop_w
-
-#     if split == 'train':
-#         transform_train = Compose([RandomCrop(h,w),
-#                     HorizontalFlip(p=0.5), 
-#                     Normalize(mean=mean,std=std)])
-
-#         dataset = DepthDataset(root, txt_file, transforms=transform_train, **kwargs)
-#         # train_dl_cs = DepthDataset(root, '/content/drive/My Drive/atdt/input_list_train_cityscapes.txt', transforms=transform_train, **kwargs)
-#         # dataset = ConcatDataset((dataset_carla, train_dl_cs))
-#         return DataLoader(dataset, batch_size=params.batch_size_train, shuffle=True, num_workers=params.num_workers, drop_last=True, pin_memory=True)
-
-#     else:
-#         transform_val = Compose( [Normalize(mean=mean,std=std)])
-#         dataset=DepthDataset(root, txt_file, transforms=transform_val, **kwargs)
-#         #reduce validation data to speed up training
-#         if "split_validation" in params.dict:
-#             ss = ShuffleSplit(n_splits=1, test_size=params.split_validation, random_state=42)
-#             indexes=range(len(dataset))
-#             split1, split2 = next(ss.split(indexes))
-#             dataset=Subset(dataset, split2)        
-
-#         return DataLoader(dataset, batch_size=params.batch_size_val, shuffle=False, num_workers=params.num_workers, drop_last=True, pin_memory=True)
+        return figure
