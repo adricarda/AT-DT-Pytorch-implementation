@@ -88,7 +88,7 @@ class SegmentationDataset(Dataset):
         CityscapesClass('train',                31, 11, 'vehicle', 7, True, False, (0, 80, 100)),
         CityscapesClass('motorcycle',           32, 7, 'vehicle', 7, True, False, (0, 0, 230)),
         CityscapesClass('bicycle',              33, 11, 'vehicle', 7, True, False, (119, 11, 32)),
-        CityscapesClass('license plate',        -1, 11, 'vehicle', 7, False, True, (0, 0, 142)),
+        CityscapesClass('license plate',        -1, 11, 'vehicle', 7, False, True, (0, 0, 0)),
     ]
 
     carla = [
@@ -189,7 +189,7 @@ class SegmentationDataset(Dataset):
             x_r[c] += mean_c
         return x_r
 
-    def get_predictions_plot(self, batch_sample, predictions, batch_gt):
+    def get_predictions_plot(self, batch_sample, predictions, batch_gt, encode_gt=False):
 
         num_images = batch_sample.size()[0]
         fig, m_axs = plt.subplots(3, num_images, figsize=(12, 10), squeeze=False)
@@ -208,7 +208,7 @@ class SegmentationDataset(Dataset):
             axis2.imshow(prediction)
             axis2.set_axis_off()
             
-            gt = self.colorize_mask(gt, encode_with_train_id=True)
+            gt = self.colorize_mask(gt, encode_with_train_id=encode_gt)
             axis3.imshow(gt)
             axis3.set_axis_off()
 

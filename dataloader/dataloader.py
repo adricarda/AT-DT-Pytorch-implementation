@@ -22,8 +22,8 @@ def fetch_dataloader(root, txt_file, split, params, sem_depth=False):
 
     transform_train = Compose([RandomCrop(h, w),
                                HorizontalFlip(p=0.5),
-                               Normalize(mean=mean, std=std)])
-    transform_val = Compose([Normalize(mean=mean, std=std)])
+                               Normalize(mean=mean, std=std)], additional_targets={'mask2': 'mask'})
+    transform_val = Compose([Normalize(mean=mean, std=std)], additional_targets={'mask2': 'mask'})
 
     if split == 'train':
         if sem_depth == False:
