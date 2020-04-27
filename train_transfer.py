@@ -143,7 +143,7 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl, val_dl_so
             adpative_model, None, val_dl_target, metrics=metrics, params=params)
 
         writer.add_scalars('Loss', {
-            # 'Training': train_loss,
+            'Training': train_loss,
             'Validation': val_loss_source,
         }, epoch)
 
