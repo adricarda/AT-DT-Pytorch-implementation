@@ -163,18 +163,18 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl_all, train
                                                          params.num_epochs-1, current_lr))
         writer.add_scalar('Learning_rate', current_lr, epoch)
 
-        if epoch % 5 == 0 or epoch==params.num_epochs-1:
-            predictions_sem = inference(model_target, batch_sample_carla)
-            predictions_depth = inference(model_source, batch_sample_carla)
+        # if epoch % 5 == 0 or epoch==params.num_epochs-1:
+        predictions_sem = inference(model_target, batch_sample_carla)
+        predictions_depth = inference(model_source, batch_sample_carla)
 
-            plot = train_dl_all.dataset.get_predictions_plot(
-                batch_sample_carla, predictions_sem.cpu(), batch_gt_carla_sem.cpu(), predictions_depth.cpu(), batch_gt_carla_depth.cpu())
-            writer.add_image('Predictions_carla', plot, epoch, dataformats='HWC')
+        plot = train_dl_all.dataset.get_predictions_plot(
+            batch_sample_carla, predictions_sem.cpu(), batch_gt_carla_sem.cpu(), predictions_depth.cpu(), batch_gt_carla_depth.cpu())
+        writer.add_image('Predictions_carla', plot, epoch, dataformats='HWC')
 
-            predictions = inference(adpative_model, batch_sample_cs)
-            plot = val_dl_target.dataset.dataset.get_predictions_plot(
-                batch_sample_cs, predictions.cpu(), batch_gt_cs)
-            writer.add_image('Predictions_target', plot, epoch, dataformats='HWC')
+        predictions = inference(adpative_model, batch_sample_cs)
+        plot = val_dl_target.dataset.dataset.get_predictions_plot(
+            batch_sample_cs, predictions.cpu(), batch_gt_cs)
+        writer.add_image('Predictions_target', plot, epoch, dataformats='HWC')
 
         transfer.train()
         train_loss = train_epoch(
