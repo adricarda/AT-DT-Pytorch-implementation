@@ -17,3 +17,5 @@ experiments/segmentation_resnet50/ckpt/
 experiments/transfer_baseline/logs/
 experiments/transfer_baseline/tensorboard/
 experiments/transfer_baseline/ckpt/
+experiments/transfer_bigger_lr/
+experiments/transfer_bs4/
