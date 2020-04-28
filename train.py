@@ -229,7 +229,7 @@ if __name__ == '__main__':
 
     # fetch loss function and metrics
     loss_fn = get_loss_fn(params)
-    # num_classes+1 for background.
+
     metrics = OrderedDict({})
     for metric in params.metrics:
         metrics[metric] = get_metrics(metric, params)

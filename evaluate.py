@@ -32,7 +32,6 @@ def evaluate(model, loss_fn, dataset_dl, metrics=None, params=None):
 
     if loss_fn is not None:
         running_loss = utils.RunningAverage()
-    num_batches = len(dataset_dl)
     if metrics is not None:
         for metric_name, metric in metrics.items():
             metric.reset()
