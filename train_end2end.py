@@ -215,12 +215,11 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl_all, train
         writer.add_scalar('Learning_rate', current_lr, epoch)
 
         transfer.train()
-        train_loss_depth, train_loss_segmentation = 0., 0.
-        # train_loss_depth, train_loss_segmentation = train_epoch(
-        #                 model_source, model_target, transfer, 
-        #                 train_dl_all, train_dl_depth_target, 
-        #                 opt1, opt2, opt3, loss_fn1, loss_fn2, params,
-        #                 lr_scheduler1, lr_scheduler2, lr_scheduler3)
+        train_loss_depth, train_loss_segmentation = train_epoch(
+                        model_source, model_target, transfer, 
+                        train_dl_all, train_dl_depth_target, 
+                        opt1, opt2, opt3, loss_fn1, loss_fn2, params,
+                        lr_scheduler1, lr_scheduler2, lr_scheduler3)
 
         writer.add_scalars('Losses', {
             'Training_depth': train_loss_depth,
