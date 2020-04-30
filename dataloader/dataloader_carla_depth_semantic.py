@@ -114,7 +114,7 @@ class SemanticDepth(Dataset):
         CityscapesClass(  'bicycle'              ,  255,      11, 'vehicle'         , 7       , True         , False        , (0, 0, 0) ),
     ]
 
-    def __init__(self, root, txt_file, transforms=None, encoding='carla', mean=[0.286, 0.325, 0.283], std=[0.176, 0.180, 0.177], max_depth=1000, threshold=100):
+    def __init__(self, root, txt_file1, txt_file2, transforms=None, encoding='carla', mean=[0.286, 0.325, 0.283], std=[0.176, 0.180, 0.177], max_depth=1000, threshold=100):
 
         super(SemanticDepth, self).__init__()
         if encoding == 'carla':
@@ -127,18 +127,28 @@ class SemanticDepth(Dataset):
         self.id_to_trainId = {
             cs_class.id: cs_class.train_id for cs_class in self.encoding}
         self.palette = []
-        self.files_txt = txt_file
+        self.files_txt1 = txt_file1
         self.images = []
         self.semantic = []
         self.depth = []
+        self.files_txt2 = txt_file2
+        self.images_cs = []
+        self.depth_cs = []
         self.root = root
         self.transforms = transforms
 
-        for line in open(self.files_txt, 'r').readlines():
+        for line in open(self.files_txt1, 'r').readlines():
             splits = line.split(';')
             self.images.append(os.path.join(root, splits[0].strip()))
             self.semantic.append(os.path.join(root, splits[2].strip()))
             self.depth.append(os.path.join(root, splits[3].strip()))
+
+        for line in open(self.files_txt2, 'r').readlines():
+            splits = line.split(';')
+            self.images_cs.append(os.path.join(root, splits[0].strip()))
+            self.depth_cs.append(os.path.join(root, splits[3].strip()))
+
+        self.len_target_dataset = len(self.images_cs)
 
         self.colors = {
             cs_class.train_id: cs_class.color for cs_class in self.encoding}
@@ -184,9 +194,14 @@ class SemanticDepth(Dataset):
             index], self.semantic[index], self.depth[index]
         img, mask_semantic, mask_depth = Image.open(img_path).convert(
             'RGB'), Image.open(mask_path_semantic), Image.open(mask_path_depth)
+        
+        img_path_cs, mask_path_depth_cs = self.images[index%self.len_target_dataset], self.depth[index%self.len_target_dataset]
+        img_cs, mask_depth_cs = Image.open(img_path_cs).convert('RGB'), Image.open(mask_path_depth_cs)
 
         mask_semantic = self.encode_image_train_id(mask_semantic)
         mask_depth = self.png2depth(mask_depth)
+
+        mask_depth_cs = self.png2depth(mask_depth_cs)
 
         if self.transforms is not None:
             transformed = self.transforms(image=np.array(
@@ -195,11 +210,18 @@ class SemanticDepth(Dataset):
             mask_semantic = transformed['mask']
             mask_depth = transformed['mask2']
 
+        if self.transforms is not None:
+            transformed = self.transforms(image=np.array(img_cs), mask=mask_depth_cs)
+            img_cs = transformed['image']
+            mask_depth_cs = transformed['mask']
+
         img = to_tensor(img)
+        img_cs = to_tensor(img_cs)
         mask_semantic = torch.from_numpy(mask_semantic).type(torch.long)
         mask_depth = torch.from_numpy(mask_depth)
+        mask_depth_cs = torch.from_numpy(mask_depth_cs)
 
-        return img, mask_semantic, mask_depth
+        return img, mask_semantic, mask_depth, img_cs, mask_depth_cs
 
     def __len__(self):
         return len(self.images)

@@ -89,7 +89,7 @@ def evaluate_source(model_source, model_target, dataset_dl, metrics_depth, metri
             metric.reset()
 
     with torch.no_grad():
-        for (xb, yb_seg, yb_depth) in tqdm(dataset_dl):
+        for (xb, yb_seg, yb_depth, _, _) in tqdm(dataset_dl):
             xb = xb.to(params.device)
             yb_seg = yb_seg.to(params.device)
             yb_depth = yb_depth.to(params.device)
@@ -114,29 +114,39 @@ def evaluate_source(model_source, model_target, dataset_dl, metrics_depth, metri
     return metrics_depth_results, metrics_segmentation_results
 
 
-def train_epoch(model_source, model_target, transfer, 
-                train_dl_all, train_dl_depth_target, 
+class LayerActivationHook:
+    features = None
+
+    def __init__(self, model):
+        self.hook = model.backbone.register_forward_hook(self.hook_fn)
+    
+    def hook_fn(self, model, input, output):
+        self.features = output['out'].detach()
+    
+    def remove_hook(self):
+        self.hook.remove()
+
+
+def train_epoch(model_source, model_target, transfer, train_dl_all, 
                 opt1, opt2, opt3, loss_fn1, loss_fn2, params,
                 lr_scheduler1, lr_scheduler2, lr_scheduler3):
 
     running_loss_depth_carla = utils.RunningAverage()
     running_loss_segmentation_carla = utils.RunningAverage()
 
-    iter_cs_depth = iter(train_dl_depth_target)
-    iter_carla_depth_sem = iter(train_dl_all)
-
     source_encoder = model_source.backbone
     source_decoder = model_source.classifier
     target_decoder = model_target.classifier
 
-    for (batch_images_carla, batch_segmentation_carla, batch_depth_carla) in tqdm(train_dl_all):
+    for (batch_images_carla, batch_segmentation_carla, batch_depth_carla, batch_images_cs, batch_depth_cs) in tqdm(train_dl_all):
         input_shape = batch_images_carla.shape[-2:]
 
-        try:
-            batch_images_cs, batch_depth_cs = next(iter_cs_depth)
-        except StopIteration:
-            iter_cs_depth = iter(train_dl_depth_target)
-            batch_images_cs, batch_depth_cs = next(iter_cs_depth)
+        hook = LayerActivationHook(model_source)
+        # try:
+        #     batch_images_cs, batch_depth_cs = next(iter_cs_depth)
+        # except StopIteration:
+        #     iter_cs_depth = iter(train_dl_depth_target)
+        #     batch_images_cs, batch_depth_cs = next(iter_cs_depth)
 
         loss_cs_depth = train_step(model_source, batch_images_cs.to(params.device), batch_depth_cs.to(params.device), opt1, loss_fn1)
 
@@ -144,11 +154,14 @@ def train_epoch(model_source, model_target, transfer,
         batch_segmentation_carla = batch_segmentation_carla.to(params.device)
         batch_depth_carla = batch_depth_carla.to(params.device)
 
-        depth_feature = source_encoder(batch_images_carla)['out']
-        depth_feature_copy = depth_feature.detach()
-        depth_prediction = source_decoder(depth_feature)
+        # depth_feature = source_encoder(batch_images_carla)['out']
+        # depth_feature_copy = depth_feature.detach()
+        hook.features = None
+        depth_prediction = model_source(batch_images_carla)
+        depth_feature_copy = hook.features
+        hook.remove_hook()
 
-        depth_prediction = F.interpolate(depth_prediction, size=input_shape, mode='bilinear', align_corners=False)
+        depth_prediction = F.interpolate(depth_prediction['out'], size=input_shape, mode='bilinear', align_corners=False)
         loss_depth_carla = loss_fn1(depth_prediction, batch_depth_carla)
 
         if opt1 is not None:
@@ -182,7 +195,7 @@ def train_epoch(model_source, model_target, transfer,
     return running_loss_depth_carla(), running_loss_segmentation_carla()
 
 
-def train_and_evaluate(model_source, model_target, transfer, train_dl_all, train_dl_depth_target, val_dl_source_all, val_dl_target, 
+def train_and_evaluate(model_source, model_target, transfer, train_dl_all, val_dl_all, val_dl_target, 
                         opt1, opt2, opt3, loss_fn1, loss_fn2, metrics_depth, metrics_segmentation, params,
                         lr_scheduler1, lr_scheduler2, lr_scheduler3,
                         checkpoint_dir_source, checkpoint_dir_target, checkpoint_dir_transfer, 
@@ -192,7 +205,7 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl_all, train
     best_value = -float('inf')
     start_epoch = 0
 
-    batch_sample_carla, batch_gt_carla_sem, batch_gt_carla_depth = next(iter(val_dl_source_all))
+    batch_sample_carla, batch_gt_carla_sem, batch_gt_carla_depth, _, _ = next(iter(val_dl_all))
     batch_sample_cs, batch_gt_cs = next(iter(val_dl_target))
 
     if os.path.exists(ckpt_file_path):
@@ -216,8 +229,7 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl_all, train
 
         transfer.train()
         train_loss_depth, train_loss_segmentation = train_epoch(
-                        model_source, model_target, transfer, 
-                        train_dl_all, train_dl_depth_target, 
+                        model_source, model_target, transfer, train_dl_all, 
                         opt1, opt2, opt3, loss_fn1, loss_fn2, params,
                         lr_scheduler1, lr_scheduler2, lr_scheduler3)
 
@@ -240,7 +252,7 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl_all, train
         writer.add_image('Predictions_target', plot, epoch, dataformats='HWC')
 
         val_metrics_depth, val_metrics_segmentation = evaluate_source(
-        model_source, model_target, val_dl_source_all, metrics_depth, metrics_segmentation, params)
+        model_source, model_target, val_dl_all, metrics_depth, metrics_segmentation, params)
 
         _, val_metrics_transfer = evaluate(
             adpative_model, None, val_dl_target, metrics=metrics_segmentation, params=params)
@@ -259,7 +271,7 @@ def train_and_evaluate(model_source, model_target, transfer, train_dl_all, train
 
         # If best_eval, best_save_path
         if is_best:
-            logging.info("- Found new best accuracy")
+            logging.info("- Found new best value")
             best_value = current_value
             # Save best val metrics in a json file in the model directory
             best_json_path = os.path.join(
@@ -357,13 +369,13 @@ if __name__ == '__main__':
     # fetch dataloaders
     params_transfer.encoding = params_transfer.encoding_source
     train_dl_all = dataloader.fetch_dataloader(
-        args.data_dir, args.txt_train_carla, 'train', params_transfer, sem_depth=True)
+        args.data_dir, args.txt_train_carla, 'train', params_transfer, sem_depth=True, txt_file2=args.txt_train_cs)
 
-    train_dl_depth_target = dataloader.fetch_dataloader(
-        args.data_dir, args.txt_train_cs, 'train', params_source)
+    # train_dl_depth_target = dataloader.fetch_dataloader(
+    #     args.data_dir, args.txt_train_cs, 'train', params_source)
 
-    val_dl_source_all = dataloader.fetch_dataloader(
-        args.data_dir, args.txt_val_source, 'val', params_transfer, sem_depth=True)
+    val_dl_all = dataloader.fetch_dataloader(
+        args.data_dir, args.txt_val_source, 'val', params_transfer, sem_depth=True, txt_file2=args.txt_val_target)
 
     params_transfer.encoding = params_transfer.encoding_target
     val_dl_target = dataloader.fetch_dataloader(
@@ -426,7 +438,7 @@ if __name__ == '__main__':
         params_transfer.num_epochs))
 
     train_and_evaluate(model_source, model_target, transfer, 
-                        train_dl_all, train_dl_depth_target, val_dl_source_all, val_dl_target, 
+                        train_dl_all, val_dl_all, val_dl_target, 
                         opt1, opt2, opt3, loss_fn1, loss_fn2, metrics_depth, metrics_segmentation, params_transfer, 
                         lr_scheduler1, lr_scheduler2, lr_scheduler3, 
                         args.checkpoint_dir_source, args.checkpoint_dir_target, args.checkpoint_dir_transfer, 

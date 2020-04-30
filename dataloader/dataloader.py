@@ -14,7 +14,7 @@ from dataloader.dataloader_semantic import SegmentationDataset
 from dataloader.dataloader_carla_depth_semantic import SemanticDepth
 
 
-def fetch_dataloader(root, txt_file, split, params, sem_depth=False):
+def fetch_dataloader(root, txt_file, split, params, sem_depth=False, txt_file2=None):
     # these can be changed. By deafult we use the target dataset statistics (i.e. Cityscapes)
     mean = [0.286, 0.325, 0.283]
     std = [0.176, 0.180, 0.177]
@@ -34,7 +34,7 @@ def fetch_dataloader(root, txt_file, split, params, sem_depth=False):
                 dataset = SegmentationDataset(
                     root, txt_file, transforms=transform_train, encoding=params.encoding, mean=mean, std=std)
         else:
-            dataset = SemanticDepth(root, txt_file, transforms=transform_train, encoding=params.encoding,
+            dataset = SemanticDepth(root, txt_file, txt_file2, transforms=transform_train, encoding=params.encoding,
                                     max_depth=params.max_depth, threshold=params.threshold, mean=mean, std=std)
         return DataLoader(dataset, batch_size=params.batch_size_train, shuffle=True, num_workers=params.num_workers, pin_memory=True)
 
@@ -47,7 +47,7 @@ def fetch_dataloader(root, txt_file, split, params, sem_depth=False):
                 dataset = SegmentationDataset(
                     root, txt_file, transforms=transform_val, encoding=params.encoding, mean=mean, std=std)
         else:
-            dataset = SemanticDepth(root, txt_file, transforms=transform_val, encoding=params.encoding,
+            dataset = SemanticDepth(root, txt_file, txt_file2, transforms=transform_val, encoding=params.encoding,
                                     max_depth=params.max_depth, threshold=params.threshold, mean=mean, std=std)
 
         # reduce validation data to speed up training
