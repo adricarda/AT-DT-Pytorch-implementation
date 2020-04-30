@@ -19,8 +19,10 @@ experiments/transfer_baseline/tensorboard/
 experiments/transfer_baseline/ckpt/
 experiments/transfer_bigger_lr/
 experiments/transfer_bs4/
+experiments/transfer_bs8/
 experiments/end2end/logs/
 experiments/end2end/tensorboard/
 experiments/end2end/source/
 experiments/end2end/transfer/
 experiments/end2end/target/
+experiments/end2end_temp
